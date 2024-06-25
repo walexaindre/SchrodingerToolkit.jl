@@ -19,6 +19,6 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/walexaindre/SchrodingerToolkit.jl",
+    repo="github.com/walexaindre/SchrodingerToolkit.jl.git",
     devbranch="dev",
 )
