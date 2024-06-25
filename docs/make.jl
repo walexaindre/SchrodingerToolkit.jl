@@ -20,5 +20,5 @@ makedocs(;
 
 deploydocs(;
     repo="github.com/walexaindre/SchrodingerToolkit.jl.git",
-    devbranch="dev",
+    devbranch="main",
 )
