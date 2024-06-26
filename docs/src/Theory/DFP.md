@@ -1,0 +1,1 @@
+In the journey of explore how to improve parallelism we need to learn the theory behind how to discretize the equation.
