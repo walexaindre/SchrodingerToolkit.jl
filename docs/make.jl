@@ -15,6 +15,7 @@ makedocs(;
     ),
     pages=[
         "Home" => "index.md",
+        "Usage" => ["./Usage/QuickStart.md"],
         "Theory" => [
             "Problem" => "./Theory/Problem.md",
             "DFP" => "./Theory/DFP.md",
