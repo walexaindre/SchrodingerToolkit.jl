@@ -1,4 +1,7 @@
 module SchrodingerToolkit
+
+macro langserverignore(args...) end
+
 using PrettyTables
 using ProgressMeter
 using Printf

@@ -6,9 +6,6 @@ abstract type AbstractGPUBackend{IntType,FloatType,ComplexType,VectorType} <: Ab
 
 abstract type AbstractxPUBackend{IntType,FloatType,ComplexType,VectorType} <: AbstractBackend{IntType,FloatType,ComplexType,VectorType} end
 
-
-
-
 struct GPUBackend{IntType,FloatType,ComplexType,VectorType} <: AbstractGPUBackend{IntType,FloatType,ComplexType,VectorType}
     device::IntType
 end
