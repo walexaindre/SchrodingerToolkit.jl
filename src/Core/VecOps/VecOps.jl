@@ -22,7 +22,7 @@ matrix_to_vector(::Type{M}) where {M<:AbstractCuSparseMatrix} = M.types[3]
 
 matrix_to_vector(::Type{M}) where {M<:SparseMatrixCSC} = M.types[5]
 
-matrix_to_vector(::Type{M}) where {M<:SparseMatrixCSR} = M.types[5]
+#matrix_to_vector(::Type{M}) where {M<:SparseMatrixCSR} = M.types[5]
 
 """
     v = vundef(S, n)

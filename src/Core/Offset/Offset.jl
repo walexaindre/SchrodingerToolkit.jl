@@ -224,7 +224,7 @@ end
 end
 
 @inline function apply_offsets!(out::Vec, start_idx::Ti,
-                                A::PeriodicAbstractMesh{Ti,N},
+                                A::PeriodicAbstractGrid{Ti,N},
                                 I::Ind,
                                 offsets::SymmetricOffset{N,Ti,Tv,OffsetTuple}) where {Ti<:Integer,
                                                                                       Tv,
@@ -245,7 +245,7 @@ end
     out
 end
 
-@inline function apply_offsets(A::PeriodicAbstractMesh{Ti,N},
+@inline function apply_offsets(A::PeriodicAbstractGrid{Ti,N},
                                I::Ind,
                                offsets::SymmetricOffset{N,Ti,Tv,OffsetTuple}) where {Ti<:Integer,
                                                                                      Tv,
@@ -296,7 +296,7 @@ end
 @inline function core_circulant_matrix_format_COO(col::Vec,
                                                   SOff::SymmetricOffset{N,Ti,Tv,
                                                                         OTup},
-                                                  AMesh::PeriodicAbstractMesh{Tv,N}) where {Ti<:Integer,
+                                                  AMesh::PeriodicAbstractGrid{Tv,N}) where {Ti<:Integer,
                                                                                             Tv,
                                                                                             N,
                                                                                             Vec,

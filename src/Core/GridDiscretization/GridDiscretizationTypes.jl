@@ -13,4 +13,4 @@ struct SecondDerivativeCoefficients{V <: Integer,T <: AbstractFloatOrRational{V}
     order::V
 end
 
-export SecondDerivativeCoefficients, SecondDerivativeFiniteDifferenceScheme
+export FiniteDifferenceScheme, AbstractFloatOrRational, SecondDerivativeCoefficients, SecondDerivativeFiniteDifferenceScheme

@@ -82,7 +82,7 @@ end
                                                       AMesh::AM) where {Vt<:Integer,
                                                                         VecO<:Vector{Vt},
                                                                         Vec<:AbstractVector,
-                                                                        AM<:AbstractMesh{Vt}}
+                                                                        AM<:AbstractGrid{Vt}}
     offsets = offset_generator(offsets_vector)
 
     core_circulant_matrix_format_IJV(col, offsets, AMesh)
@@ -92,7 +92,7 @@ end
                                                       AMesh::AM) where {Vt<:Integer,
                                                                         R<:AbstractRange{Vt},
                                                                         Vec<:AbstractVector,
-                                                                        AM<:AbstractMesh{Vt}}
+                                                                        AM<:AbstractGrid{Vt}}
     offsets = offset_generator(Vt, offsets_range)
 
     core_circulant_matrix_format_IJV(col, offsets, AMesh)

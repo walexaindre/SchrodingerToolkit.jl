@@ -1,6 +1,6 @@
 
 function get_A_format_COO(::Type{T}, Mesh::AM,
-                          Order::Symbol) where {V<:Integer,AM<:AbstractMesh{V,1},
+                          Order::Symbol) where {V<:Integer,AM<:AbstractGrid{V,1},
                                                 T<:AbstractFloatOrRational{V}}
     #Fetch discretization coefficients
     SD = get_coefficients(SecondDerivativeFiniteDifferenceScheme, Order)
@@ -50,7 +50,7 @@ end
 function get_A_format_COO(::Type{T}, Mesh::AM,
                           Order::NTuple{N,Symbol}) where {V<:Integer,
                                                           T<:AbstractFloatOrRational{V},
-                                                          N,AM<:AbstractMesh{V,N}}
+                                                          N,AM<:AbstractGrid{V,N}}
 
     #Get individual dimensions
     submesh = extract_every_dimension(Mesh)

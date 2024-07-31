@@ -5,7 +5,7 @@ function drop(M::Matrix, AMesh::AM, τ::Tv, offset_ranges::RTup = 1:2,
                                                               TolT<:AbstractFloat,
                                                               RTup<:TupleOrRange{V},
                                                               Matrix,
-                                                              AM<:AbstractMesh{V,N}}
+                                                              AM<:AbstractGrid{V,N}}
     if size(M, 1) != size(M, 2)
         throw(DimensionMismatch("Matrix must be square"))
     end
@@ -65,7 +65,7 @@ function drop_kron(M::Matrix, AMesh::AM, τ::Tv, offset_ranges::RTup = 1:2,
                                                                    TolT<:AbstractFloat,
                                                                    RTup<:TupleOrRange{Ti},
                                                                    Matrix,
-                                                                   AM<:AbstractMesh{Ti,
+                                                                   AM<:AbstractGrid{Ti,
                                                                                     N}}
     if size(M, 1) != size(M, 2)
         throw(DimensionMismatch("Matrix must be square"))
