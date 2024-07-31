@@ -4,8 +4,8 @@
 ##
 ################################################################################################
 
-@inline Base.size(A::T) where {T<:AbstractGrid} = A.dims
-@inline Base.length(A::T) where {T<:AbstractGrid} = prod(A.dims)
+@inline Base.size(A::T) where {T<:AbstractPDEGrid} = A.dims
+@inline Base.length(A::T) where {T<:AbstractPDEGrid} = prod(A.dims)
 
 @inline range_start_step_stop(start, step, stop) = start:step:stop
 @inline range_start_stop_step(start, stop, step) = start:step:stop

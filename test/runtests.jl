@@ -1,4 +1,5 @@
 using SchrodingerToolkit
+using Base.Iterators: product
 using Test
 
 @testset "SchrodingerToolkit.jl" begin
