@@ -1,9 +1,7 @@
-@langserverignore include("GridDiscretizationTypes.jl")
 
 function get_A_format_COO(::Type{T}, Mesh::AM,
                           Order::Symbol) where {V<:Integer,AM<:AbstractMesh{V,1},
                                                 T<:AbstractFloatOrRational{V}}
-
     #Fetch discretization coefficients
     SD = get_coefficients(SecondDerivativeFiniteDifferenceScheme, Order)
 

@@ -1,8 +1,8 @@
 using JSON
 using Base.Iterators
 
-const network_dir = pwd()*"/src/core/TupleSort/Network"
-const output_dir = pwd()*"/src/core/TupleSort/"
+const network_dir = pwd() * "/src/core/TupleSort/Network"
+const output_dir = pwd() * "/src/core/TupleSort/"
 #######################
 #
 #  This code generator is based on the work at bertdobbelaere.github.io
@@ -14,19 +14,17 @@ const output_dir = pwd()*"/src/core/TupleSort/"
 #   min_max(x, y, lt = isless, by = identity) = lt(by(x), by(y)) ? (x, y) : (y, x)
 #######
 
-
-
-function generator!(io,ordercollection)
+function generator!(io, ordercollection)
     cnum = sum(length, ordercollection)
     dnum = length(ordercollection)
-    n = maximum(map(maximum,flatten(ordercollection))) + 1
+    n = maximum(map(maximum, flatten(ordercollection))) + 1
 
     ##Info:
-    info ="""
-    number of elements: $n
-                 depth: $dnum
-                 steps: $cnum
-    """
+    info = """
+     number of elements: $n
+                  depth: $dnum
+                  steps: $cnum
+     """
     println(info)
 
     varlist = ["i$idx" for idx in 1:n]
@@ -73,18 +71,18 @@ function generator!(io,ordercollection)
 end
 
 function assemblycode()
-    io=IOBuffer()
+    io = IOBuffer()
 
     for dir in readdir(network_dir)
-        jsonfile = open(io->read(io,String),network_dir*"/"*dir)
+        jsonfile = open(io -> read(io, String), network_dir * "/" * dir)
         re = JSON.parse(jsonfile)
         #return re
-        generator!(io,re["nw"])
+        generator!(io, re["nw"])
     end
     io
 end
 
 re = assemblycode()
-open(output_dir*"swapsort.jl","w+") do io
-write(io,take!(re))
+open(output_dir * "swapsort.jl", "w+") do io
+    write(io, take!(re))
 end
