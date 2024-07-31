@@ -15,6 +15,7 @@ using GLMakie
 using SparseArrays
 using CUDA
 using CUDA.CUSPARSE
+using CUDSS
 using Krylov
 using Distributed
 
