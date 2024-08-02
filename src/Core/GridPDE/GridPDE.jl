@@ -105,16 +105,22 @@ end
     return repeat(A.ranges[col]; inner = inner_elems, outer = outer_elems)
 end
 
-function get_range(A::PeriodicGrid{V,T,R,N}, dim::V) where {V<:Integer,T<:Real,R<:AbstractRange{T},N}
+function get_range(A::PeriodicGrid{V,T,R,N},
+                   dim::V) where {V<:Integer,T<:Real,R<:AbstractRange{T},N}
     A.ranges[dim]
 end
 
-function collect_points(A::PeriodicGrid{V,T,R,N}) where {V<:Integer,T<:Real,R<:AbstractRange{T},N}
-
-    foldl(hcat,(A[:,idx] for idx in 1:N))
+function collect_points(A::PeriodicGrid{V,T,R,N}) where {V<:Integer,T<:Real,
+                                                         R<:AbstractRange{T},N}
+    foldl(hcat, (A[:, idx] for idx in 1:N))
 end
 
 @inline Base.convert(::Type{PeriodicAbstractGrid{V,N}}, A::PeriodicGrid{V,T,R,N}) where {V<:Integer,T<:Real,R<:AbstractRange{T},N} = PeriodicAbstractMesh(V,
                                                                                                                                                           A.dims)
 
+"""
+    measure(A::PeriodicGrid{V,T,R,N}) where {V<:Integer,T<:Real,R<:AbstractRange{T},N}
+
+Return the measure of the grid.
+"""
 @inline measure(A::PeriodicGrid{V,T,R,N}) where {V<:Integer,T<:Real,R<:AbstractRange{T},N} = prod(A.h)
