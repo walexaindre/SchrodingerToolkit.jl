@@ -2,7 +2,7 @@ module SchrodingerToolkit
 
 macro langserverignore(args...) end
 
-using ParallelStencil
+
 using PrettyTables
 using ProgressMeter
 using Printf
@@ -29,6 +29,8 @@ using IncompleteLU
 using Dictionaries
 using JSON
 
+using ParallelStencil
+using ImplicitGlobalGrid
 
 include("./index.jl")
 
