@@ -12,9 +12,9 @@ include("Core/Diagrams/DiagramsRecipes.jl")
 
 
 #Solver
-include("Solver/Backend/BackendTypes.jl")
 include("Solver/MethodTypes.jl")
 include("Solver/SolverTypes.jl")
+include("Solver/Backend/ComputeBackend.jl")
 
 
 #Methods and declarations => Here we include all the methods and declarations that are used in the package
@@ -37,3 +37,7 @@ include("Core/GridDiscretization/GridDiscretization.jl")
 #Solver
 include("Solver/Method.jl")
 include("Solver/Solver.jl")
+
+
+#PDE Models
+include("Solver/Procedure/index.jl")
