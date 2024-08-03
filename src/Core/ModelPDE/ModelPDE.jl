@@ -1,15 +1,35 @@
-SchrodingerPDEComponent(σ::Tv,f::Fn,ψ::IC,V::TP = nothing,Γ::Γv = nothing) where {Tv,Fn,IC,TP,Γv} = SchrodingerPDEComponent(σ,f,ψ,V,Γ)
+@inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Fn,InitialCondition,
+                                                                  TrappingPotential}) where {Tv,
+                                                                                             Fn,
+                                                                                             InitialCondition,
+                                                                                             TrappingPotential} =
+    if TrappingPotential == Nothing
+        return false
+    else
+        return true
+    end
 
-@inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Fn,InitialCondition,TrappingPotential}) where {Tv,Fn,InitialCondition,TrappingPotential} = if TrappingPotential == Nothing return false else return true end
+@inline has_josephson_junction(Component::SchrodingerPDEComponent{Tv,Γv,Fn,
+                                                                  InitialCondition,
+                                                                  TrappingPotential}) where {Tv,
+                                                                                             Γv,
+                                                                                             Fn,
+                                                                                             InitialCondition,
+                                                                                             TrappingPotential} =
+    if Γv == Nothing
+        return false
+    else
+        return true
+    end
 
-@inline has_josephson_junction(Component::SchrodingerPDEComponent{Tv,Γv,Fn,InitialCondition,TrappingPotential}) where {Tv,Γv,Fn,InitialCondition,TrappingPotential} = if Γv == Nothing return false else return true end
-
-@inline has_josephson_junction(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_josephson_junction, PDE.components)
-@inline has_josephson_junction(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_josephson_junction, PDE.components)
-@inline has_trapping_potential(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_trapping_potential, PDE.components)
-@inline has_trapping_potential(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_trapping_potential, PDE.components)
-
-
+@inline has_josephson_junction(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_josephson_junction,
+                                                                                                                         PDE.components)
+@inline has_josephson_junction(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_josephson_junction,
+                                                                                                                                          PDE.components)
+@inline has_trapping_potential(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_trapping_potential,
+                                                                                                                         PDE.components)
+@inline has_trapping_potential(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_trapping_potential,
+                                                                                                                                          PDE.components)
 
 "Number of dimensions for the Schrodinger PDE"
 @inline Base.ndims(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = N
@@ -22,8 +42,6 @@ SchrodingerPDEComponent(σ::Tv,f::Fn,ψ::IC,V::TP = nothing,Γ::Γv = nothing) w
 
 #"Number of components for the Schrodinger PDE"
 #@inline Base.length(SPDE::SchrodingerPDENonPolynomic{N,Tv,Comp,Potential}) where {N,Tv,Comp,Potential} = length(Comp)
-
-
 
 "Type of the elements for the Schrodinger PDE"
 @inline Base.eltype(::Type{SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}}) where {N,Tv,MComp,Potential,Optimized} = Tv
@@ -126,28 +144,26 @@ end
     nothing
 end
 
+"Evaluation of the initial condition for the Schrodinger PDE where the output is stored in `Container`"
+@inline function evaluate_ψ!(PDE::SPDE, P::PGrid, Container) where {SPDE<:SchrodingerPDE}
+    points = typeof(Container)(collect_points(P))
+    for i in 1:ncomponents(PDE)
+        ψ_ = view(Container, :, i)
+        func = get_ψ(PDE, i)
+        ψ_ .= func(points)
+    end
+    nothing
+end
+
 "Number of components for the Schrodinger PDE"
 @inline ncomponents(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = length(SPDE.components)
 
 "Estimate the number of timesteps for the Schrodinger PDE"
-@inline function estimate_timesteps(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,
-                                                                  Potential,
-                                                                  Optimized},
-                                    P::PGrid) where {N,Tv,MComp,Potential,Optimized,
+@inline function estimate_timesteps(PDE::SPDE,
+                                    P::PGrid) where {SPDE<:SchrodingerPDE,
                                                      PGrid<:PeriodicGrid}
     τ = P.τ
-    T = get_time_boundary(SPDE)
-    rank = 0:τ:T
-    return length(rank) - 1
-end
-
-"Estimate the number of timesteps for the Schrodinger PDE"
-@inline function estimate_timesteps(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,
-                                                                     Potential},
-                                    P::PGrid) where {N,Tv,MComp,Potential,
-                                                     PGrid<:PeriodicGrid}
-    τ = P.τ
-    T = get_time_boundary(SPDE)
+    T = get_time_boundary(PDE)
     rank = 0:τ:T
     return length(rank) - 1
 end

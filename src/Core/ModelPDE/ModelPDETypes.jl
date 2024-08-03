@@ -7,6 +7,7 @@ struct SchrodingerPDEComponent{Tv,Γv,Fn,InitialCondition,TrappingPotential}
     ψ::InitialCondition #Initial condition 
     V::TrappingPotential # External trapping potential
     Γ::Γv #Josephson Junction Coefficient => In some documents this coefficient is the same for all components but I guess it can be different under some circumstances.
+    SchrodingerPDEComponent(σ::Tv, f::Fn, ψ::InitialCondition, V::TrappingPotential = nothing, Γ::Γv = nothing) where {Tv,Fn,InitialCondition,TrappingPotential,Γv} = new(σ,f,ψ,V,Γ)
 end
 
 "Generic handler for non polynomic potentials"

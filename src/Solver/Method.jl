@@ -1,26 +1,14 @@
-IterativeLinearSolver(::Type{ComputeBackend}) where {IntType,FloatType,ComplexType,VectorType,
-VectorComplexType,MatrixType,
-MatrixComplexType,
-ComputeBackend<:AbstractBackend{IntType,
-FloatType,
-ComplexType,
-VectorType,
-VectorComplexType,
-MatrixType,
-MatrixComplexType}} = IterativeLinearSolver(700 * eps(FloatType),
-                                            700 * eps(FloatType), IntType(10000))
+IterativeLinearSolver(::Type{ComputeBackend}) where {FloatType,IntType,
+ComputeBackend<:AbstractBackend{FloatType,IntType}} = IterativeLinearSolver(700 *
+                                                                            eps(FloatType),
+                                                                            700 *
+                                                                            eps(FloatType),
+                                                                            IntType(10000))
 
-NormBased(::Type{ComputeBackend}) where {IntType,FloatType,ComplexType,VectorType,
-VectorComplexType,MatrixType,
-MatrixComplexType,
-ComputeBackend<:AbstractBackend{IntType,
-FloatType,
-ComplexType,
-VectorType,
-VectorComplexType,
-MatrixType,
-MatrixComplexType}} = NormBased(700 * eps(FloatType), 700 * eps(FloatType),
-                                IntType(10000))
+NormBased(::Type{ComputeBackend}) where {FloatType,IntType,
+ComputeBackend<:AbstractBackend{FloatType,IntType}} = NormBased(700 * eps(FloatType),
+                                                                700 * eps(FloatType),
+                                                                IntType(10000))
 
 @inline get_atol(param::NormBased{IntType,FloatType}) where {IntType,FloatType} = param.atol
 @inline get_rtol(param::NormBased{IntType,FloatType}) where {IntType,FloatType} = param.rtol
