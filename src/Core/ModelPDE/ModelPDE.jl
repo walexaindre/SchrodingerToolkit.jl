@@ -1,3 +1,4 @@
+SchrodingerPDEComponent(σ::Tv,f::Fn,ψ::IC,V::TP = nothing,Γ::Γv = nothing) where {Tv,Fn,IC,TP,Γv} = SchrodingerPDEComponent(σ,f,ψ,V,Γ)
 
 @inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Fn,InitialCondition,TrappingPotential}) where {Tv,Fn,InitialCondition,TrappingPotential} = if TrappingPotential == Nothing return false else return true end
 
@@ -7,6 +8,8 @@
 @inline has_josephson_junction(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_josephson_junction, PDE.components)
 @inline has_trapping_potential(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_trapping_potential, PDE.components)
 @inline has_trapping_potential(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_trapping_potential, PDE.components)
+
+
 
 "Number of dimensions for the Schrodinger PDE"
 @inline Base.ndims(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = N
@@ -64,14 +67,28 @@
 "Initial condition for the Schrodinger PDE component"
 @inline get_ψ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].ψ
 
+"Trapping potential for the i-th Schrodinger PDE component"
+@inline get_V(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].V
+
+"Trapping potential for the i-th Schrodinger PDE component"
+@inline get_V(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].V
+
+"Josephson Junction Coefficient for the i-th Schrodinger PDE component"
+@inline get_Γ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].Γ
+
+"Josephson Junction Coefficient for the i-th Schrodinger PDE component"
+@inline get_Γ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].Γ
+
 "Potential for the Schrodinger PDE"
 @inline get_field(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.F
 
 "Potential for the Schrodinger PDE"
 @inline get_field(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.F
 
+"Simplified polynomial to evade catastrophic cancellation"
 @inline get_optimized(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.N
 
+"Non polynomial potentials can't be optimized so return nothing"
 @inline get_optimized(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = nothing
 
 "Finish time for the Schrodinger PDE"
@@ -80,6 +97,7 @@
 "Finish time for the Schrodinger PDE"
 @inline get_time_boundary(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.T
 
+"Evaluation of the initial condition for the Schrodinger PDE"
 @inline function evaluate_ψ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,
                                                           Optimized}, P::PGrid,
                             Memory) where {N,Tv,MComp,Potential,Optimized,
@@ -94,6 +112,7 @@
     nothing
 end
 
+"Evaluation of the initial condition for the Schrodinger PDE"
 @inline function evaluate_ψ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential},
                             P::PGrid,
                             Memory) where {N,Tv,MComp,Potential,PGrid<:PeriodicGrid}
@@ -107,8 +126,10 @@ end
     nothing
 end
 
+"Number of components for the Schrodinger PDE"
 @inline ncomponents(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = length(SPDE.components)
 
+"Estimate the number of timesteps for the Schrodinger PDE"
 @inline function estimate_timesteps(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,
                                                                   Potential,
                                                                   Optimized},
@@ -120,6 +141,7 @@ end
     return length(rank) - 1
 end
 
+"Estimate the number of timesteps for the Schrodinger PDE"
 @inline function estimate_timesteps(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,
                                                                      Potential},
                                     P::PGrid) where {N,Tv,MComp,Potential,
