@@ -44,6 +44,6 @@ function isxpu end
 @inline isxpu(backend::CPUBackend) = false
 @inline isxpu(backend::GPUBackend) = false
 
-Base.show(io::IO, backend::CPUBackend{RealType,IntegerType}) = print(io, "CPUBackend: {$RealType, $IntegerType}")
-Base.show(io::IO, backend::GPUBackend{RealType,IntegerType}) = print(io, "GPUBackend: {$RealType, $IntegerType}")
-Base.show(io::IO, backend::xPUBackend{RealType,IntegerType}) = print(io, "xPUBackend: {$RealType, $IntegerType}")
+Base.show(io::IO, backend::CPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "CPUBackend: {$RealType, $IntegerType}")
+Base.show(io::IO, backend::GPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "GPUBackend: {$RealType, $IntegerType}")
+Base.show(io::IO, backend::xPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "xPUBackend: {$RealType, $IntegerType}")
