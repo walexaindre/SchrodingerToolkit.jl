@@ -1,4 +1,4 @@
-using SchrodingerSolver
+using SchrodingerToolkit
 
 const α₁ = 1.0
 const α₂ = 1.0

@@ -115,6 +115,16 @@ function update_system_energy!(stats::Stats, energy::FloatType,
     end
 end
 
+"""
+    update_solver_info!(stats, time, iterations)
+
+    Update the linear solver information in the stats structure.
+
+    # Arguments
+    - `stats::Stats`: The stats structure.
+    - `time::FloatType`: The time spent in the solver.
+    - `iterations::IntType`: The number of iterations performed in the solver.
+"""
 function update_solver_info!(stats::Stats, time,
                              iterations) where {Stats<:RuntimeStats}
     if !islocked(stats)

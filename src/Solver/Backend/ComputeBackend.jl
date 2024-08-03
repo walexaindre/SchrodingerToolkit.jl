@@ -8,18 +8,18 @@
 #this is not the case in general.
 
 "Abstract type for our available backends"
-abstract type AbstractBackend{RealType,IntegerType} end
+abstract type AbstractBackend{IntType,RealType} end
 
 "This represents a CPU based backend"
-struct CPUBackend{RealType,IntegerType} <: AbstractBackend{RealType,IntegerType}
+struct CPUBackend{IntType,RealType} <: AbstractBackend{IntType,RealType}
 end
 
 "This represents a GPU based backend"
-struct GPUBackend{RealType,IntegerType} <: AbstractBackend{RealType,IntegerType}
+struct GPUBackend{IntType,RealType} <: AbstractBackend{IntType,RealType}
 end
 
 "This represents a heterogeneous based backend (Can use a mixture of CPU and GPU)"
-struct xPUBackend{RealType,IntegerType} <: AbstractBackend{RealType,IntegerType}
+struct xPUBackend{IntType,RealType} <: AbstractBackend{IntType,RealType}
 end
 
 "Function to check if a backend is a CPU based backend"
@@ -44,6 +44,8 @@ function isxpu end
 @inline isxpu(backend::CPUBackend) = false
 @inline isxpu(backend::GPUBackend) = false
 
-Base.show(io::IO, backend::CPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "CPUBackend: {$RealType, $IntegerType}")
-Base.show(io::IO, backend::GPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "GPUBackend: {$RealType, $IntegerType}")
-Base.show(io::IO, backend::xPUBackend{RealType,IntegerType}) where {RealType,IntegerType} = print(io, "xPUBackend: {$RealType, $IntegerType}")
+Base.show(io::IO, backend::GPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "GPUBackend: {$IntType, $RealType}")
+Base.show(io::IO, backend::CPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "CPUBackend: {$IntType, $RealType}")
+Base.show(io::IO, backend::xPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "xPUBackend: {$IntType, $RealType}")
+
+export CPUBackend, GPUBackend, xPUBackend, iscpu, isgpu, isxpu

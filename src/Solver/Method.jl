@@ -1,22 +1,22 @@
-IterativeLinearSolver(::Type{ComputeBackend}) where {FloatType,IntType,
-ComputeBackend<:AbstractBackend{FloatType,IntType}} = IterativeLinearSolver(700 *
-                                                                            eps(FloatType),
+IterativeLinearSolver(::Type{ComputeBackend}) where {RealType,IntType,
+ComputeBackend<:AbstractBackend{IntType,RealType}} = IterativeLinearSolver(700 *
+                                                                            eps(RealType),
                                                                             700 *
-                                                                            eps(FloatType),
+                                                                            eps(RealType),
                                                                             IntType(10000))
 
-NormBased(::Type{ComputeBackend}) where {FloatType,IntType,
-ComputeBackend<:AbstractBackend{FloatType,IntType}} = NormBased(700 * eps(FloatType),
-                                                                700 * eps(FloatType),
+NormBased(::Type{ComputeBackend}) where {RealType,IntType,
+ComputeBackend<:AbstractBackend{IntType,RealType}} = NormBased(700 * eps(RealType),
+                                                                700 * eps(RealType),
                                                                 IntType(10000))
 
-@inline get_atol(param::NormBased{IntType,FloatType}) where {IntType,FloatType} = param.atol
-@inline get_rtol(param::NormBased{IntType,FloatType}) where {IntType,FloatType} = param.rtol
-@inline get_max_iterations(param::NormBased{IntType,FloatType}) where {IntType,FloatType} = param.max_steps
+@inline get_atol(param::NormBased{IntType,RealType}) where {IntType,RealType} = param.atol
+@inline get_rtol(param::NormBased{IntType,RealType}) where {IntType,RealType} = param.rtol
+@inline get_max_iterations(param::NormBased{IntType,RealType}) where {IntType,RealType} = param.max_steps
 
-@inline get_atol(param::IterativeLinearSolver{IntType,FloatType}) where {IntType,FloatType} = param.atol
-@inline get_rtol(param::IterativeLinearSolver{IntType,FloatType}) where {IntType,FloatType} = param.rtol
-@inline get_max_iterations(param::IterativeLinearSolver{IntType,FloatType}) where {IntType,FloatType} = param.max_iterations
+@inline get_atol(param::IterativeLinearSolver{IntType,RealType}) where {IntType,RealType} = param.atol
+@inline get_rtol(param::IterativeLinearSolver{IntType,RealType}) where {IntType,RealType} = param.rtol
+@inline get_max_iterations(param::IterativeLinearSolver{IntType,RealType}) where {IntType,RealType} = param.max_iterations
 
 Base.show(io::IO, param::IterativeLinearSolver) = print(io,
                                                         "IterativeLinearSolver\nrtol: $(param.rtol)\natol: $(param.atol)\nmaxiter: $(param.max_iteration)")

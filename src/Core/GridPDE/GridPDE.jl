@@ -59,14 +59,14 @@ end
                         τ)
 end
 
-@inline PeriodicGrid(::Type{ComputeBackend}, PDE::PDEeq, τ::FloatType, h::NTuple{N,FloatType}) where {N,IntType,FloatType,PDEeq<:SchrodingerPDE{N,FloatType},ComputeBackend<:AbstractBackend{IntType,FloatType}} = PeriodicGrid(IntType,
-                                                                                                                                                                                                                                FloatType,
+@inline PeriodicGrid(::Type{ComputeBackend}, PDE::PDEeq, τ::RealType, h::NTuple{N,RealType}) where {N,IntType,RealType,PDEeq<:SchrodingerPDE{N,RealType},ComputeBackend<:AbstractBackend{IntType,RealType}} = PeriodicGrid(IntType,
+                                                                                                                                                                                                                                RealType,
                                                                                                                                                                                                                                 τ,
                                                                                                                                                                                                                                 h,
                                                                                                                                                                                                                                 PDE.boundaries)
 
-@inline PeriodicGrid(::Type{ComputeBackend}, PDE::PDEeq, τ::FloatType, N::NTuple{_N,IntType}) where {_N,IntType,FloatType,PDEeq<:SchrodingerPDE{_N,FloatType},ComputeBackend<:AbstractBackend{IntType,FloatType}} = PeriodicGrid(IntType,
-                                                                                                                                                                                                                                 FloatType,
+@inline PeriodicGrid(::Type{ComputeBackend}, PDE::PDEeq, τ::RealType, N::NTuple{_N,IntType}) where {_N,IntType,RealType,PDEeq<:SchrodingerPDE{_N,RealType},ComputeBackend<:AbstractBackend{IntType,RealType}} = PeriodicGrid(IntType,
+                                                                                                                                                                                                                                 RealType,
                                                                                                                                                                                                                                  τ,
                                                                                                                                                                                                                                  N,
                                                                                                                                                                                                                                  PDE.boundaries)

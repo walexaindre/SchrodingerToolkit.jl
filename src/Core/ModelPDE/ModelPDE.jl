@@ -145,7 +145,9 @@ end
 end
 
 "Evaluation of the initial condition for the Schrodinger PDE where the output is stored in `Container`"
-@inline function evaluate_ψ!(PDE::SPDE, P::PGrid, Container) where {SPDE<:SchrodingerPDE}
+@inline function evaluate_ψ!(PDE::SPDE, P::PGrid,
+                             Container) where {SPDE<:SchrodingerPDE,
+                                               PGrid<:PeriodicGrid}
     points = typeof(Container)(collect_points(P))
     for i in 1:ncomponents(PDE)
         ψ_ = view(Container, :, i)

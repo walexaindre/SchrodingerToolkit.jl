@@ -2,6 +2,7 @@ module SchrodingerToolkit
 
 macro langserverignore(args...) end
 
+using ParallelStencil
 using PrettyTables
 using ProgressMeter
 using Printf
@@ -27,6 +28,7 @@ using Profile
 using IncompleteLU
 using Dictionaries
 using JSON
+
 
 include("./index.jl")
 
