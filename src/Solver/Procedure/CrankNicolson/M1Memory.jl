@@ -11,6 +11,8 @@ struct M1Memory{RealType,ComplexType<:Complex{RealType},
     b0_temp::ComplexVectorType
     b_temp::ComplexVectorType
 
+    component_temp::ComplexVectorType
+
     opA::LinOp1
     opD::LinOp2
 
@@ -45,7 +47,7 @@ function M1Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
     vecmem = vzeros(ComplexVectorType, mesh_elems)
     arrmem = vzeros(ComplexArrayType, (mesh_elems, ncomp))
 
-    M1Memory(arrmem, copy(arrmem), vecmem, copy(vecmem), copy(vecmem), copy(vecmem),
+    M1Memory(arrmem, copy(arrmem), vecmem, copy(vecmem), copy(vecmem),copy(vecmem), copy(vecmem),
              copy(vecmem),
              opA, opD, initialize_gmres_kylov_solver(vecmem, krylov_gmres_memory),
              energy_solver_params)
