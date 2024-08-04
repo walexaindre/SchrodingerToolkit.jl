@@ -5,79 +5,51 @@ Base.length(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} 
 
 @inline islocked(R::RuntimeStats) = R.locked
 
-function Base.getindex(C::ComponentPower{FloatType,
-                                         ArrayType},
-                       index) where {FloatType,ArrayType}
+@inline start_energy(R::RuntimeStats) = R.system_energy[end]
+@inline system_energy(R::RuntimeStats) = R.system_energy
+@inline system_energy(R::RuntimeStats, index) = R.system_energy[index]
+@inline system_power(R::RuntimeStats, component) = R.system_power[component]
+@inline system_power(R::RuntimeStats, component, index) = R.system_power[component][index]
+@inline start_power(R::RuntimeStats, component) = R.system_power[component][end]
+@inline start_power(R::RuntimeStats) = map(x -> x[end], R.system_power)
+
+@inline function Base.getindex(C::ComponentPower{FloatType,
+                                                 ArrayType},
+                               index) where {FloatType,ArrayType}
     C.power[index]
 end
 
-function Base.setindex!(C::ComponentPower{FloatType,ArrayType},
-                        value::FloatType,
-                        index) where {FloatType,ArrayType}
+@inline function Base.setindex!(C::ComponentPower{FloatType,ArrayType},
+                                value::FloatType,
+                                index) where {FloatType,ArrayType}
     C.power[index] = value
 end
 
-function initialize_stats(::Type{VectorType},
-                          ncomponents::IntType, log_freq::IntType, τ::FloatType,
-                          timesteps::IntType,
-                          log_solverinfo::Bool = true) where {IntType<:Integer,
-                                                              FloatType<:AbstractFloat,
-                                                              VectorType<:AbstractArray{FloatType}}
-    seq = div(timesteps, log_freq) + 1
-    seq_solver = log_solverinfo ? seq : 0
-    sys_energy = vundef(VectorType, seq)
+function initialize_stats(::Type{VectorType}, ncomponents::IntType, log_freq::IntType,
+                          time_steps::IntType,
+                          log_solver_info::Bool = true) where {IntType,VectorType}
+    seq_size = div(time_steps, log_freq) + 1
+    seq_solver = log_solver_info ? seq_size : 0
+    sys_energy = vundef(VectorType, seq_size)
     sys_power = ntuple(Returns(ComponentPower(similar(sys_energy))), ncomponents)
-    sys_time = vundef(VectorType, seq)
+    sys_time = vundef(VectorType, seq_size)
     solver_time = vzeros(VectorType, seq_solver)
     solver_iterations = vzeros(VectorType, seq_solver)
 
     RuntimeStats(sys_energy, sys_power, sys_time, solver_time, solver_iterations,
-                 log_freq, τ, false, false, zero(IntType), one(IntType))
+                 log_freq, false, false, zero(IntType), one(IntType))
 end
 
-@inline function system_power(Grid, Memory)
-    measure(Grid) * vec(sum(abs2.(Memory.current_state); dims = 1))
+function startup_stats!(stats::Stats, start_power,
+                        start_energy) where {Stats<:RuntimeStats}
+    last_index = lastindex(stats.step_time)
+    update_power!(stats, start_power, last_index)
+    update_system_energy!(stats, start_energy, last_index)
+    advance_iteration!(stats)
 end
 
-@inline function system_energy(PDE, Grid, Mem, ItStop)
-    preA = Mem.preA
-    A = Mem.opA
-    D = Mem.opD
-    components = Mem.current_state
-    state_abs2 = Mem.current_state_abs2
-    stage1 = Mem.stage1
-
-    @. state_abs2 = abs2(components)
-
-    F = get_field(PDE)
-
-    energy = zero(eltype(components))
-
-    σ_collection = get_σ(PDE)
-
-    for (idx, σ) in enumerate(σ_collection)
-        @views comp = components[:, idx]
-        b = D * comp
-
-        gmres!(Mem.solver_memory,
-               A,
-               b;
-               restart = true,
-               N = preA,
-               atol = get_atol(ItStop),
-               rtol = get_rtol(ItStop),
-               itmax = get_max_iterations(ItStop))
-
-        energy -= σ * dot(comp, Mem.solver_memory.x)
-    end
-    stage1 .= F(state_abs2)
-    vecenergy = Vector(sum(stage1; dims = 1))
-    energy += vecenergy[1]
-    real(energy) * measure(Grid)
-end
-
-@inline function advance_iteration(R::RuntimeStats{IntType,FloatType}) where {IntType<:Integer,
-                                                                              FloatType<:AbstractFloat}
+@inline function advance_iteration!(R::RuntimeStats{IntType,FloatType}) where {IntType<:Integer,
+                                                                               FloatType<:AbstractFloat}
     if !islocked(R)
         R.current_iteration += 1
         if mod(R.current_iteration, R.log_frequency) == 0
@@ -138,6 +110,24 @@ function update_solver_info!(stats::Stats, time,
     end
 end
 
+function update_stats!(stats::Stats, time, power_per_component,
+                       sys_energy) where {Stats<:RuntimeStats}
+    if !islocked(stats)
+        if stats.log_data
+            idx = stats.store_index
+            stats.step_time[idx] = time
+            update_power!(stats, power_per_component, idx)
+            update_system_energy!(stats, sys_energy, idx)
+            stats.store_index += 1
+            stats.log_data = false
+        end
+        advance_iteration!(stats)
+    else
+        error("Stats are locked")
+    end
+end
+
+#deprecated
 function update_stats!(stats::Stats, time, PDE, Grid, Mem,
                        ItStop) where {Stats<:RuntimeStats}
     if !islocked(stats)
@@ -149,12 +139,123 @@ function update_stats!(stats::Stats, time, PDE, Grid, Mem,
             stats.store_index += 1
             stats.log_data = false
         end
-        advance_iteration(stats)
+        advance_iteration!(stats)
     else
         error("Stats are locked")
     end
 end
 
+function serialize(array, len)
+    output = vundef(typeof(array), len + 1)
+    output[2:(len + 1)] .= array[1:len]
+    output[1] = array[end]
+    output
+end
+
+function deserialize(::Type{VectorType}, array) where {VectorType<:AbstractVector}
+    sz = length(array)
+    output = vundef(VectorType, sz)
+    output[1:(sz - 1)] .= array[2:end]
+    output[end] = array[1]
+    output
+end
+
+function serialize(stats::Stats, path) where {Stats<:RuntimeStats}
+    max_elem = length(stats)
+
+    serialized_energy = serialize(stats.system_energy, max_elem)
+    serialized_power = map(x -> serialize(x.power, max_elem), stats.system_power)
+    serialized_time = serialize(stats.step_time, max_elem)
+
+    solver_time = serialize(stats.solver_time, max_elem)
+    solver_iterations = serialize(stats.solver_iterations, max_elem)
+
+    logfreq = stats.log_frequency
+    current_iter = stats.current_iteration
+    store_index = stats.store_index
+
+    parameters = Dict()
+    parameters["log_frequency"] = logfreq
+    parameters["current_iteration"] = current_iter
+    parameters["store_index"] = store_index
+    parameters["date"] = Dates.now(UTC)
+    parameters["struct"] = "RuntimeStats"
+    parameters["float_type"] = string(eltype(solver_time))
+    parameters["int_type"] = string(eltype(max_elem))
+    parameters["float_vector_type"] = string(typeof(stats.system_energy))
+    parameters["int_vector_type"] = string(typeof(stats.solver_iterations))
+    parameters["ncomponents"] = length(stats.system_power)
+    parameters["samples"] = max_elem
+
+    tojson = Dict()
+    tojson["system_energy"] = serialized_energy
+    tojson["system_power"] = serialized_power
+    tojson["step_time"] = serialized_time
+    tojson["solver_time"] = solver_time
+    tojson["solver_iterations"] = solver_iterations
+    tojson["metadata"] = parameters
+
+    open(path, "w") do io
+        JSON.print(io, tojson, 4)
+    end
+end
+
+function deserialize(::Type{RuntimeStats}, path::String)
+    valid_float_types = Dict("Float64" => Float64, "Float32" => Float32)
+    valid_int_types = Dict("Int64" => Int64, "Int32" => Int32)
+    valid_float_vector_types = Dict("Vector{Float64}" => Vector{Float64},
+                                    "Vector{Float32}" => Vector{Float32})
+    valid_int_vector_types = Dict("Vector{Int64}" => Vector{Int64},
+                                  "Vector{Int32}" => Vector{Int32})
+
+    fromjson = JSON.parsefile(path)
+
+    confparams = fromjson["metadata"]
+
+    if confparams["struct"] != "RuntimeStats"
+        error("The file does not contain a RuntimeStats structure")
+    end
+
+    FloatVectorType = valid_float_vector_types[confparams["float_vector_type"]]
+    IntVectorType = valid_int_vector_types[confparams["int_vector_type"]]
+    FloatType = valid_float_types[confparams["float_type"]]
+    IntType = valid_int_types[confparams["int_type"]]
+
+    system_energy = deserialize(FloatVectorType, fromjson["system_energy"])
+
+    system_power = Tuple(map(x -> ComponentPower(deserialize(FloatVectorType, x)),
+                             fromjson["system_power"]))
+
+    step_time = deserialize(FloatVectorType, fromjson["step_time"])
+
+    solver_time = deserialize(FloatVectorType, fromjson["solver_time"])
+    solver_iterations = deserialize(IntVectorType, fromjson["solver_iterations"])
+
+    parameters = fromjson["parameters"]
+
+    logfreq = IntType(parameters["log_frequency"])
+    current_iter = IntType(parameters["current_iteration"])
+    store_index = IntType(parameters["store_index"])
+
+    RuntimeStats(system_energy, system_power, step_time, solver_time,
+                 solver_iterations, logfreq, true, false, current_iter,
+                 store_index)
+end
+
+function calculate_diff_system_energy(stats::Stats) where {Stats<:RuntimeStats}
+    startup_energy = start_energy(stats)
+
+    abs.(system_energy(stats) .- startup_energy)
+end
+
+function calculate_diff_system_power(stats::Stats,
+                                     index) where {Stats<:RuntimeStats}
+    startup_power = startup_power(stats)
+
+    return abs.(system_power(stats, index) .- startup_power)
+end
+
+#deprecated
 function startup_stats(stats::Stats, PDE, Grid, Mem,
                        ItStop) where {Stats<:RuntimeStats}
     last_index = lastindex(stats.step_time)
@@ -163,9 +264,10 @@ function startup_stats(stats::Stats, PDE, Grid, Mem,
 
     update_power!(stats, system_power(Grid, Mem), last_index)
     update_system_energy!(stats, system_energy(PDE, Grid, Mem, ItStop), last_index)
-    advance_iteration(stats)
+    advance_iteration!(stats)
 end
 
+#deprecated
 function initialize_stats(::Type{VectorType}, PDE, Grid::PerGrid, Mem, ItStop,
                           log_freq::IntType,
                           log_solverinfo::Bool = true) where {IntType,FloatType,
@@ -180,115 +282,47 @@ function initialize_stats(::Type{VectorType}, PDE, Grid::PerGrid, Mem, ItStop,
     stats
 end
 
-function serialize(array, len)
-    output = vzeros(typeof(array), len + 1)
-    output[2:(len + 1)] .= array[1:len]
-    output[1] = array[end]
-    output
+#deprecated
+@inline function system_power(Grid, Memory)
+    measure(Grid) * vec(sum(abs2.(Memory.current_state); dims = 1))
 end
 
-function deserialize(::Type{VectorType}, array) where {VectorType<:AbstractVector}
-    sz = length(array)
-    output = vundef(VectorType, sz)
-    output[1:(sz - 1)] .= array[2:end]
-    output[end] = array[1]
-    output
-end
+#deprecated
+@inline function system_energy(PDE, Grid, Mem, ItStop)
+    preA = Mem.preA
+    A = Mem.opA
+    D = Mem.opD
+    components = Mem.current_state
+    state_abs2 = Mem.current_state_abs2
+    stage1 = Mem.stage1
 
-function store(stats::Stats, path) where {Stats<:RuntimeStats}
-    max_elem = stats.store_index - 1
+    @. state_abs2 = abs2(components)
 
-    serialized_energy = serialize(stats.system_energy, max_elem)
-    serialized_power = map(x -> serialize(x.power, max_elem), stats.system_power)
-    serialized_time = serialize(stats.step_time, max_elem)
+    F = get_field(PDE)
 
-    solver_time = serialize(stats.solver_time, max_elem)
-    solver_iterations = serialize(stats.solver_iterations, max_elem)
+    energy = zero(eltype(components))
 
-    logfreq = stats.log_frequency
-    current_iter = stats.current_iteration
-    store_index = stats.store_index
-    τ = stats.τ
+    σ_collection = get_σ(PDE)
 
-    parameters = Dict()
-    parameters["log_frequency"] = logfreq
-    parameters["current_iteration"] = current_iter
-    parameters["τ"] = τ
-    parameters["store_index"] = store_index
-    parameters["date"] = Dates.now(UTC)
-    parameters["struct"] = "RuntimeStats"
-    parameters["float_type"] = string(eltype(solver_time))
-    parameters["int_type"] = string(eltype(max_elem))
-    tojson = Dict()
+    for (idx, σ) in enumerate(σ_collection)
+        @views comp = components[:, idx]
+        b = D * comp
 
-    tojson["system_energy"] = serialized_energy
-    tojson["system_power"] = serialized_power
-    tojson["step_time"] = serialized_time
-    tojson["solver_time"] = solver_time
-    tojson["solver_iterations"] = solver_iterations
-    tojson["metadata"] = parameters
+        gmres!(Mem.solver_memory,
+               A,
+               b;
+               restart = true,
+               N = preA,
+               atol = get_atol(ItStop),
+               rtol = get_rtol(ItStop),
+               itmax = get_max_iterations(ItStop))
 
-    open(path, "w") do io
-        JSON.print(io, tojson, 4)
+        energy -= σ * dot(comp, Mem.solver_memory.x)
     end
-end
-
-function deserialize(::Type{VectorType}, ::Type{IntType},
-                     path::String) where {VectorType<:AbstractVector,
-                                          IntType<:Integer}
-    tojson = JSON.parsefile(path)
-    system_energy = deserialize(VectorType, tojson["system_energy"])
-    system_power = Tuple(map(x -> ComponentPower(deserialize(VectorType, x)),
-                             tojson["system_power"]))
-    step_time = deserialize(VectorType, tojson["step_time"])
-    solver_time = deserialize(VectorType, tojson["solver_time"])
-    solver_iterations = deserialize(VectorType, tojson["solver_iterations"])
-
-    parameters = tojson["parameters"]
-
-    logfreq = IntType(parameters["log_frequency"])
-    current_iter = IntType(parameters["current_iteration"])
-    store_index = IntType(parameters["store_index"])
-    τ = FloatType(parameters["τ"])
-
-    RuntimeStats(system_energy, system_power, step_time, solver_time,
-                 solver_iterations, logfreq, τ, true, false, current_iter,
-                 store_index)
-end
-
-function calculate_diff_system_energy(stats::Stats) where {IntType,FloatType,
-                                                           ArrayType,
-                                                           Stats<:RuntimeStats{IntType,
-                                                                               FloatType,
-                                                                               ArrayType}}
-    max_elem = stats.store_index - 1
-
-    startup_energy = stats.system_energy[end]
-
-    output = vundef(ArrayType, max_elem)
-
-    @inbounds @simd for i in 1:max_elem
-        output[i] = abs(stats.system_energy[i] - startup_energy)
-    end
-    output
-end
-
-function calculate_diff_system_power(stats::Stats,
-                                     index) where {IntType,FloatType,
-                                                   ArrayType,
-                                                   Stats<:RuntimeStats{IntType,
-                                                                       FloatType,
-                                                                       ArrayType}}
-    max_elem = stats.store_index - 1
-
-    startup_power = stats.system_power[index][end]
-
-    output = vundef(ArrayType, max_elem)
-
-    @inbounds @simd for i in 1:max_elem
-        output[i] = abs(stats.system_power[index][i] - startup_power)
-    end
-    output
+    stage1 .= F(state_abs2)
+    vecenergy = Vector(sum(stage1; dims = 1))
+    energy += vecenergy[1]
+    real(energy) * measure(Grid)
 end
 
 export initialize_stats, update_stats!, update_power!, update_system_energy!,

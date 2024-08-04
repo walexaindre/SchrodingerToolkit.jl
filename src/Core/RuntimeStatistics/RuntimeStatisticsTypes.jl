@@ -7,10 +7,10 @@ This abstract type provides basic tracking for runtime of PDE simulation.
 
 - `length(Stats)`: Current number of taken samples.
 - `islocked(Stats)`: Returns `true` if the `Stats`` is locked meaning that you can not move from sample `n` to `n+1`. However some fields can be updated depending on your design.
-- `initialize_stats(Stats,ncomponents,log_freq,τ,timesteps,log_solverinfo)`: Here you should initialize the `Stats` type. `ncomponents` is the number of components in the PDE, `log_freq` is the frequency of logging, `τ` is the time step, `timesteps` is the total number of time steps, and `log_solverinfo` is a boolean that indicates whether to log solver information.
-- `update_system_energy!(Stats,energy,index)`: Update the system energy at time step `index`.
+- `initialize_stats(::Type{VectorType},ncomponents,log_freq,time_steps,log_solver_info)`: Initialize the memory underlying `Stats` type. 
+- `startup_stats!(Stats,start_power,start_energy)`: Initialize the power and energy at time step `0`. This is usally stored at the last index of the memory.
 - `update_power!(Stats,power,index)`: Update the power at time step `index`.
-- `advance!(Stats)`: Move from sample `n` to `n+1`.
+- `advance_iteration!(Stats)`: Move from sample  `n`  to  `n+1`.
 - `serialize(Stats,path)`: Serialize the `Stats` type to a file.
 - `deserialize(Stats,path)`: Deserialize the `Stats` type from a file.
 
@@ -22,21 +22,21 @@ This abstract type provides basic tracking for runtime of PDE simulation.
 
 # Examples
 """
-abstract type AbstractRuntimeStats{IntType,FloatType,ArrayType} end
+abstract type AbstractRuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType} end
 
 struct ComponentPower{FloatType,ArrayType<:AbstractArray{FloatType}} <: AbstractVector{FloatType}
     power::ArrayType
 end
 
-mutable struct RuntimeStats{IntType,FloatType,ArrayType<:AbstractArray{FloatType},Power<:Tuple{Vararg{ComponentPower{FloatType,ArrayType}}}} <: AbstractRuntimeStats{IntType,FloatType,ArrayType} 
-    const system_energy::ArrayType
+mutable struct RuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType<:AbstractArray{FloatType},Power<:Tuple{Vararg{ComponentPower{FloatType,FloatArrayType}}}} <: AbstractRuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType} 
+    const system_energy::FloatArrayType
     const system_power::Power
-    const step_time::ArrayType
-    const solver_time::ArrayType
-    const solver_iterations::ArrayType
+    const step_time::FloatArrayType
+    const solver_time::FloatArrayType
+    const solver_iterations::IntArrayType
     const log_frequency::IntType
-    const τ::FloatType
     const locked::Bool
+    
     log_data::Bool
     current_iteration::IntType
     store_index::IntType

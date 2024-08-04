@@ -67,6 +67,7 @@ config(problem::SchrodingerProblem) = problem.Config
             - `stats`: The statistics of the method.
                     - If you want to log statistics and you perform some kind of component wise operation then:
                         - You must call `update_solver_info!(stats, time, niter)` to store every time spent at linear solvers.
+                    - In general 
             - `PDE`: The PDE to be solved.
             - `config`: The configuration of the solver.
         
@@ -75,6 +76,8 @@ config(problem::SchrodingerProblem) = problem.Config
         The return of this function must be the time taken to advance one step in time.
 """
 function step! end
+
+@inline step!(met,mem,stat,pde,conf) = error("step! functionality not implemented for $(typeof(met))")
 
 @inline step!(P::SchrodingerProblem) = step!(method(P), memory(P),stats(P), PDE(P), config(P))
 
