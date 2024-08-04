@@ -77,7 +77,7 @@ config(problem::SchrodingerProblem) = problem.Config
 """
 function step! end
 
-@inline step!(met,mem,stat,pde,conf) = error("step! functionality not implemented for $(typeof(met))")
+@inline step!(met,mem,stat,pde,conf::SolverConfig) = error("step! functionality not implemented for $(typeof(met))")
 
 @inline step!(P::SchrodingerProblem) = step!(method(P), memory(P),stats(P), PDE(P), config(P))
 

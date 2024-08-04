@@ -12,6 +12,7 @@ using Unitful
 using StaticArrays
 
 using LinearAlgebra
+using LinearOperators
 using GLMakie
 using SparseArrays
 using CUDA

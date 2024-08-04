@@ -4,6 +4,7 @@ Base.size(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} = 
 Base.length(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} = length(C.power)
 
 @inline islocked(R::RuntimeStats) = R.locked
+@inline islog(R::RuntimeStats) = R.log_data
 
 @inline start_energy(R::RuntimeStats) = R.system_energy[end]
 @inline system_energy(R::RuntimeStats) = R.system_energy
@@ -28,10 +29,10 @@ end
 function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},
                           ncomponents::IntType, log_freq::IntType,
                           time_steps::IntType,
-                          log_solver_info::Bool = true) where {IntType,IntVectorType,
+                          islog_solver_info::Bool = true) where {IntType,IntVectorType,
                                                                FloatVectorType}
     seq_size = div(time_steps, log_freq) + 1
-    seq_solver = log_solver_info ? seq_size : 0
+    seq_solver = islog_solver_info ? seq_size : 0
     sys_energy = vundef(FloatVectorType, seq_size)
     sys_power = ntuple(Returns(ComponentPower(similar(sys_energy))), ncomponents)
     sys_time = vundef(FloatVectorType, seq_size)
@@ -112,12 +113,52 @@ function update_solver_info!(stats::Stats, time,
     end
 end
 
-function update_stats!(stats::Stats, time, power_per_component,
+"""
+    calculate_diff_system_energy(stats)
+
+    Calculate the absolute value of the difference between the system energy and the energy at time step `0`.
+
+    # Arguments
+    - `stats::Stats`: The stats structure.
+"""
+function calculate_diff_system_energy(stats::Stats) where {Stats<:RuntimeStats}
+    startup_energy = start_energy(stats)
+
+    abs.(system_energy(stats)[1:length(stats)] .- startup_energy)
+end
+
+"""
+    calculate_diff_system_power(stats)
+
+    Calculate the absolute value of the difference between the system power and the power at time step `0`.
+
+    # Arguments
+    - `stats::Stats`: The stats structure.
+"""
+function calculate_diff_system_power(stats::Stats,
+                                     index) where {Stats<:RuntimeStats}
+    startup_power = startup_power(stats)
+
+    return abs.(system_power(stats, index)[1:length(stats)] .- startup_power)
+end
+
+"""
+    update_stats!(stats, step_time, power_per_component, sys_energy)
+
+    Update the stats structure with the current time, power per component and system energy.
+
+    # Arguments
+    - `stats::Stats`: The stats structure.
+    - `step_time::FloatType`: Amount of time spent in the current step.
+    - `power_per_component`: The power per component.
+    - `sys_energy::FloatType`: The system energy.
+"""
+function update_stats!(stats::Stats, step_time, power_per_component,
                        sys_energy) where {Stats<:RuntimeStats}
     if !islocked(stats)
         if stats.log_data
             idx = stats.store_index
-            stats.step_time[idx] = time
+            stats.step_time[idx] = step_time
             update_power!(stats, power_per_component, idx)
             update_system_energy!(stats, sys_energy, idx)
             stats.store_index += 1
@@ -244,18 +285,7 @@ function deserialize(::Type{RuntimeStats}, path::String)
                  store_index)
 end
 
-function calculate_diff_system_energy(stats::Stats) where {Stats<:RuntimeStats}
-    startup_energy = start_energy(stats)
 
-    abs.(system_energy(stats) .- startup_energy)
-end
-
-function calculate_diff_system_power(stats::Stats,
-                                     index) where {Stats<:RuntimeStats}
-    startup_power = startup_power(stats)
-
-    return abs.(system_power(stats, index) .- startup_power)
-end
 
 #deprecated
 function startup_stats(stats::Stats, PDE, Grid, Mem,
