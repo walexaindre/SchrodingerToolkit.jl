@@ -30,7 +30,7 @@ function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},
                           ncomponents::IntType, log_freq::IntType,
                           time_steps::IntType,
                           islog_solver_info::Bool = true) where {IntType,IntVectorType,
-                                                               FloatVectorType}
+                                                                 FloatVectorType}
     seq_size = div(time_steps, log_freq) + 1
     seq_solver = islog_solver_info ? seq_size : 0
     sys_energy = vundef(FloatVectorType, seq_size)
@@ -41,6 +41,19 @@ function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},
 
     RuntimeStats(sys_energy, sys_power, sys_time, solver_time, solver_iterations,
                  log_freq, false, false, zero(IntType), one(IntType))
+end
+
+function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType}, PDE::SPDE,
+                          conf::SolverConfig,
+                          grid::PGrid) where {FloatVectorType,IntVectorType,
+                                              SPDE<:SchrodingerPDE,
+                                              PGrid<:PeriodicGrid}
+    log_freq = stats_logfreq(conf)
+    islog_solver_info = stats_logsol(conf)
+    ncomp = ncomponents(PDE)
+    tsteps = estimate_timesteps(PDE, grid)
+    initialize_stats(FloatVectorType, IntVectorType, ncomp, log_freq, tsteps,
+                     islog_solver_info)
 end
 
 function startup_stats!(stats::Stats, start_power,
@@ -284,8 +297,6 @@ function deserialize(::Type{RuntimeStats}, path::String)
                  solver_iterations, logfreq, true, false, current_iter,
                  store_index)
 end
-
-
 
 #deprecated
 function startup_stats(stats::Stats, PDE, Grid, Mem,

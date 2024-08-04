@@ -13,7 +13,7 @@ function SolverParameters(::Type{ComputeBackend}, dim::IntType,
                           spaceorder = ntuple(Returns(:ord2), dim),
                           timeorder = :tord2_1_1;
                           verbose::IntType = zero(IntType),
-                          stats::Tuple{Bool,IntType} = (true, IntType(5)),
+                          stats::Tuple{Bool,IntType,Bool} = (true, IntType(5),true),
                           debug::Tuple{Bool,IntType,IntType} = (false, zero(IntType),
                                                                 zero(IntType)),
                           show_progress::Bool = false,
@@ -32,11 +32,13 @@ end
 
 Base.ndims(conf::SolverConfig) = length(conf.space_order)
 
+backend_type(conf::SolverConfig) = conf.backend_type
 debug(conf::SolverConfig) = conf.debug[1]
 debug_level(conf::SolverConfig) = conf.debug[2]
 debug_sublevel(conf::SolverConfig) = conf.debug[3]
 stats(conf::SolverConfig) = conf.stats[1]
 stats_logfreq(conf::SolverConfig) = conf.stats[2]
+stats_logsol(conf::SolverConfig) = conf.stats[3]
 verbose(conf::SolverConfig) = conf.verbose
 show_progress(conf::SolverConfig) = conf.show_progress
 output_folder(conf::SolverConfig) = conf.output_folder_path
@@ -76,8 +78,6 @@ config(problem::SchrodingerProblem) = problem.Config
         The return of this function must be the time taken to advance one step in time.
 """
 function step! end
-
-@inline step!(met,mem,stat,pde,conf::SolverConfig) = error("step! functionality not implemented for $(typeof(met))")
 
 @inline step!(P::SchrodingerProblem) = step!(method(P), memory(P),stats(P), PDE(P), config(P))
 

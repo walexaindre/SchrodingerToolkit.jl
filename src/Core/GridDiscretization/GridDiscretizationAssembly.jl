@@ -76,14 +76,14 @@ end
 function get_D_format_COO(::Type{Tv}, Grid::AG,
                           Order::NTuple{N,Symbol}) where {N,
                                                           Tv<:AbstractFloatOrRational,
-                                                          AG<:AbstractGrid{NTuple{N,
+                                                          AG<:AbstractPDEGrid{NTuple{N,
                                                                                   Tv},
                                                                            N}}
     if N > 3
         throw(ArgumentError("Only 1D, 2D and 3D grids are supported..."))
     end
 
-    Mesh = PeriodicAbstractMesh(Grid)
+    Mesh = PeriodicAbstractGrid(Grid)
     V = typeof(Mesh.dims[1])
     submeshes = extract_every_dimension(Mesh)
 

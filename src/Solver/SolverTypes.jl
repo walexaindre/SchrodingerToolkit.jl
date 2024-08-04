@@ -11,7 +11,7 @@ struct SolverConfig{N,IntType,Backend}
 
     #stopping_criteria::StoppingCriteria
 
-    stats::Tuple{Bool,IntType}
+    stats::Tuple{Bool,IntType,Bool}
     debug::Tuple{Bool,IntType,IntType}
 end
 

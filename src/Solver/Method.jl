@@ -19,10 +19,10 @@ ComputeBackend<:AbstractBackend{IntType,RealType}} = NormBased(700 * eps(RealTyp
 @inline get_max_iterations(param::IterativeLinearSolver{IntType,RealType}) where {IntType,RealType} = param.max_iterations
 
 Base.show(io::IO, param::IterativeLinearSolver) = print(io,
-                                                        "IterativeLinearSolver\nrtol: $(param.rtol)\natol: $(param.atol)\nmaxiter: $(param.max_iteration)")
+                                                        "\nIterativeLinearSolver\nrtol: $(param.rtol)\natol: $(param.atol)\nmaxiter: $(param.max_iterations)")
 Base.show(io::IO, param::NormBased) = print(io,
-                                            "StoppingCriteria\nNormBased\natol: $(param.atol)\nrtol: $(param.rtol)\nmaxiter: $(param.max_steps)")
+                                            "\nStoppingCriteria\nNormBased\natol: $(param.atol)\nrtol: $(param.rtol)\nmaxiter: $(param.max_steps)")
 Base.show(io::IO, param::FixedSteps) = print(io,
-                                             "StoppingCriteria\nFixedSteps\nnsteps: $(param.nsteps)")
+                                             "\nStoppingCriteria\nFixedSteps\nnsteps: $(param.nsteps)")
 
 export IterativeLinearSolver, NormBased, FixedSteps, DirectLinearSolver

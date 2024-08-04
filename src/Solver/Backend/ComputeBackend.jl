@@ -31,21 +31,26 @@ function isgpu end
 "Function to check if a backend is a heterogeneous based backend"
 function isxpu end
 
-@inline iscpu(backend::CPUBackend) = true
-@inline iscpu(backend::GPUBackend) = false
-@inline iscpu(backend::xPUBackend) = false
+@inline BackendReal(::Type{BackendType}) where {IntType,RealType,BackendType<:AbstractBackend{IntType,RealType}} = RealType
+@inline BackendInt(::Type{BackendType}) where {IntType,RealType,BackendType<:AbstractBackend{IntType,RealType}} = IntType
 
+@inline iscpu(::Type{CPUBackend{I,F}}) where {I,F} = true
+@inline iscpu(::Type{GPUBackend{I,F}}) where {I,F} = false
+@inline iscpu(::Type{xPUBackend{I,F}}) where {I,F} = false
 
-@inline isgpu(backend::GPUBackend) = true
-@inline isgpu(backend::CPUBackend) = false
-@inline isgpu(backend::xPUBackend) = false
+@inline isgpu(::Type{GPUBackend{I,F}}) where {I,F} = true
+@inline isgpu(::Type{CPUBackend{I,F}}) where {I,F} = false
+@inline isgpu(::Type{xPUBackend{I,F}}) where {I,F} = false
 
-@inline isxpu(backend::xPUBackend) = true
-@inline isxpu(backend::CPUBackend) = false
-@inline isxpu(backend::GPUBackend) = false
+@inline isxpu(::Type{xPUBackend{I,F}}) where {I,F} = true
+@inline isxpu(::Type{CPUBackend{I,F}}) where {I,F} = false
+@inline isxpu(::Type{GPUBackend{I,F}}) where {I,F} = false
 
-Base.show(io::IO, backend::GPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "GPUBackend: {$IntType, $RealType}")
-Base.show(io::IO, backend::CPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "CPUBackend: {$IntType, $RealType}")
-Base.show(io::IO, backend::xPUBackend{IntType,RealType}) where {IntType,RealType} = print(io, "xPUBackend: {$IntType, $RealType}")
+Base.show(io::IO, backend::GPUBackend{IntType,RealType}) where {IntType,RealType} = print(io,
+                                                                                          "GPUBackend: {$IntType, $RealType}")
+Base.show(io::IO, backend::CPUBackend{IntType,RealType}) where {IntType,RealType} = print(io,
+                                                                                          "CPUBackend: {$IntType, $RealType}")
+Base.show(io::IO, backend::xPUBackend{IntType,RealType}) where {IntType,RealType} = print(io,
+                                                                                          "xPUBackend: {$IntType, $RealType}")
 
 export CPUBackend, GPUBackend, xPUBackend, iscpu, isgpu, isxpu

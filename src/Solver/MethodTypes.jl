@@ -21,6 +21,27 @@ end
 struct DirectLinearSolver<:AbstractLinearSolver
 end
 
+"""
+    AbstractSolverMethod{RealType}
+
+    This is the abstract type for all solver methods. It is parametrized by the type of the real numbers used in the solver.
+
+    # How to define a new solver method
+    To define a new solver method, you need to define a new struct that is a subtype of this abstract type. The struct must have the following fields:
+    - `Grid`: The grid on which the solver will operate.
+
+    # Expected initialization
+    The solver method must be initialized with the following arguments:
+    - `config`: The basic configuration of the solver.
+    - `grid`: The grid on which the solver will operate.
+
+    # Required methods
+    The solver method must implement the following methods:
+    - `step!`: Perform a single step of the solver.
+
+    # Methods related to statistics
+    [TODO]
+"""
 abstract type AbstractSolverMethod{RealType} end
 
 struct Kernel{LinOp1,LinOp2,LinOp3}
