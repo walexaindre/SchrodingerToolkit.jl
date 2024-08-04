@@ -25,16 +25,18 @@ end
     C.power[index] = value
 end
 
-function initialize_stats(::Type{VectorType}, ncomponents::IntType, log_freq::IntType,
+function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},
+                          ncomponents::IntType, log_freq::IntType,
                           time_steps::IntType,
-                          log_solver_info::Bool = true) where {IntType,VectorType}
+                          log_solver_info::Bool = true) where {IntType,IntVectorType,
+                                                               FloatVectorType}
     seq_size = div(time_steps, log_freq) + 1
     seq_solver = log_solver_info ? seq_size : 0
-    sys_energy = vundef(VectorType, seq_size)
+    sys_energy = vundef(FloatVectorType, seq_size)
     sys_power = ntuple(Returns(ComponentPower(similar(sys_energy))), ncomponents)
-    sys_time = vundef(VectorType, seq_size)
-    solver_time = vzeros(VectorType, seq_solver)
-    solver_iterations = vzeros(VectorType, seq_solver)
+    sys_time = vundef(FloatVectorType, seq_size)
+    solver_time = vzeros(FloatVectorType, seq_solver)
+    solver_iterations = vzeros(IntVectorType, seq_solver)
 
     RuntimeStats(sys_energy, sys_power, sys_time, solver_time, solver_iterations,
                  log_freq, false, false, zero(IntType), one(IntType))
@@ -326,4 +328,5 @@ end
 end
 
 export initialize_stats, update_stats!, update_power!, update_system_energy!,
-       system_power, system_energy, store, deserialize, serialize
+       system_power, system_energy, deserialize, serialize, calculate_diff_system_energy,
+       calculate_diff_system_power, start_power, start_energy, islocked
