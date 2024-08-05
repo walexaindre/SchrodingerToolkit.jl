@@ -10,7 +10,7 @@ struct M1{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
     origin::RealType
 end
 
-stopping_criteria(method::M1) = method.stop_crit
+stopping_criteria(method::M1) = method.stopping_criteria
 time_collection(method::M1) = method.time_collection
 linear_solve_params(method::M1) = method.linear_solve_params
 
@@ -121,7 +121,7 @@ function M1(PDE::SPDE, conf::SolverConfig,
     Meth, Memory, Stats
 end
 
-@inline function update_component!(method, memory, stats, τ, component_index)
+@inline function update_component!(method, memory, stats,PDE,τ,σ, component_index)
     current_state = current_state!(memory)
     grid_measure = sqrt(measure(method.grid))
     solved = false
@@ -145,7 +145,7 @@ end
 
     #Method operators
     solver_params = linear_solve_params(method)
-    stopping_criteria = stopping_criteria(method)
+    stopping_criteria_m1 = stopping_criteria(method)
 
     Kernel = method.Kernel[(σ, τ)]
 
@@ -159,7 +159,7 @@ end
     #End of N optimized
 
     mul!(b0_temp, opC, ψ)
-    for _ in 1:get_max_iterations(stopping_criteria)
+    for _ in 1:get_max_iterations(stopping_criteria_m1)
         @. current_state_abs2 = abs2(current_state)
         @. temporary_abs2 = abs2(zₗ)
         @. stage1 = zₗ + ψ
@@ -171,7 +171,7 @@ end
                rtol = get_rtol(solver_params),
                itmax = get_max_iterations(solver_params))
         copy!(zₗ, SolverMem.x)
-        update_solver_info!(stats, SolverMem.timer, SolverMem.niter)
+        update_solver_info!(stats, SolverMem.stats.timer, SolverMem.stats.niter)
 
         #NormBased
         copy!(stage2, zₗ)
@@ -180,7 +180,7 @@ end
 
         znorm = grid_measure * norm(stage1)
         solved = znorm <=
-                 get_atol(stopping_criteria) + get_rtol(stopping_criteria) * znorm
+                 get_atol(stopping_criteria_m1) + get_rtol(stopping_criteria_m1) * znorm
         if solved
             break
         end
@@ -191,6 +191,7 @@ end
 
 function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
     start_timer = time()
+    grid = method.grid
 
     σ_forward = get_σ(PDE)
     σ_backward = reverse(σ_forward)
@@ -198,12 +199,12 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
     for τ in time_collection(method)
         #Forward
         for (component_index, σ) in enumerate(σ_forward)
-            update_component!(method, memory, stats, τ, component_index)
+            update_component!(method, memory, stats,PDE, τ,σ, component_index)
         end
         #Backward
 
         for (component_index, σ) in zip(length(σ_backward):-1:1, σ_backward)
-            update_component!(method, memory, stats, τ, component_index)
+            update_component!(method, memory, stats,PDE, τ,σ, component_index)
         end
     end
 
