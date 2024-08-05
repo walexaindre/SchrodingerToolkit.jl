@@ -1,32 +1,52 @@
-include("M1Memory.jl")
+include("M2Memory.jl")
 
-struct M1{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
+struct M2{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
        AbstractSolverMethod{RealType}
     grid::Grid
     Kernel::TKernel
+
     linear_solve_params::ItSolver
     time_collection::TTime
     stopping_criteria::StoppingCriterion
     origin::RealType
 end
 
-stopping_criteria(method::M1) = method.stopping_criteria
-time_collection(method::M1) = method.time_collection
-linear_solve_params(method::M1) = method.linear_solve_params
+stopping_criteria(method::M2) = method.stopping_criteria
+time_collection(method::M2) = method.time_collection
+linear_solve_params(method::M2) = method.linear_solve_params
 
-function M1(PDE::SPDE, conf::SolverConfig,
+struct M2Kernel{KernelType}
+    LKernel::KernelType
+end
+
+function M2Kernel(PDE, curr_state, opA, opD)
+    ncomp = ncomponents(PDE)
+    points = typeof(curr_state)(collect_points(grid))
+
+    for comp_i in 1:ncomp
+        Vᵢ = trapping_potential(PDE, comp_i)
+        σ = get_σ(PDE, comp_i)
+        opA * Vᵢ(points) - σ * opD
+    end
+end
+
+function SparseArrays.spdiagm(v::CuArray{Tv}) where {Tv}
+    nzVal = v
+    N = Int32(length(v))
+
+    colPtr = CuArray(one(Int32):(N + one(Int32)))
+    rowVal = CuArray(one(Int32):N)
+    dims = (N, N)
+    CuSparseMatrixCSC(colPtr, rowVal, nzVal, dims)
+end
+
+Base.display(spdiagm([1, 2, 3]))
+
+function M2(PDE::SPDE, conf::SolverConfig,
             grid::Grid;
             linear_solver_params = IterativeLinearSolver(backend_type(conf)),
             stopping_criteria = NormBased(backend_type(conf))) where {Grid<:AbstractPDEGrid,
                                                                       SPDE<:SchrodingerPDE}
-    if has_josephson_junction(PDE) && has_trapping_potential(PDE)
-        throw(ArgumentError("The M1 method does not support Josephson junctions and trapping potentials"))
-    elseif has_josephson_junction(PDE)
-        throw(ArgumentError("The M1 method does not support Josephson junctions"))
-    elseif has_trapping_potential(PDE)
-        throw(ArgumentError("The M1 method does not support trapping potentials"))
-    end
-
     backend = backend_type(conf)
     FloatType = BackendReal(backend)
     ComplexType = Complex{FloatType}
@@ -45,8 +65,6 @@ function M1(PDE::SPDE, conf::SolverConfig,
 
     AI, AJ, AV = get_A_format_COO(FloatType, PeriodicAbstractGrid(grid),
                                   space_order(conf))
-    DI, DJ, DV = get_D_format_COO(FloatType, grid,
-                                  space_order(conf))
 
     opA = sparse(AI, AJ, ComplexCPUVector(AV))
 
@@ -62,80 +80,19 @@ function M1(PDE::SPDE, conf::SolverConfig,
     dictionary_keys = Array{Tuple{FloatType,FloatType},1}(undef, 0)
 
     sizehint!(dictionary_keys, length(σset) * length(TimeMultipliers))
-
-    if iscpu(backend)
-        Memory = M1Memory(ComplexCPUVector, ComplexCPUArray, PDE, conf, grid,
-                          opA, opD)
-
-        dictionary_values = Array{Kernel{SparseMatrixCSR{1,ComplexType,IntType},
-                                         UniformScaling{Bool},
-                                         SparseMatrixCSR{1,ComplexType,IntType}},1}(undef,
-                                                                                    0)
-
-        sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
-
-        for (σ, βτ) in product(σset,
-                               TimeMultipliers)
-            opB = (4im * opA + βτ * σ * opD)
-            dropzeros!(opB)
-            opC = (4im * opA - βτ * σ * opD)
-            dropzeros!(opC)
-
-            Ker = Kernel(opB, I, opC)
-
-            push!(dictionary_keys, (σ, βτ))
-            push!(dictionary_values, Ker)
-        end
-
-    elseif isgpu(backend)
-        Memory = M1Memory(ComplexGPUVector, ComplexGPUArray, PDE, conf, grid,
-                          CuSparseMatrixCSR(opA), CuSparseMatrixCSR(opD);
-                          energy_solver_params = linear_solver_params)
-
-        dictionary_values = Array{Kernel{CuSparseMatrixCSR{ComplexType,Int32},
-                                         UniformScaling{Bool},
-                                         CuSparseMatrixCSR{ComplexType,Int32}},1}(undef,
-                                                                                  0)
-        sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
-
-        for (σ, βτ) in product(σset,
-                               TimeMultipliers)
-            opB = (4im * opA + βτ * σ * opD)
-            dropzeros!(opB)
-            opC = (4im * opA - βτ * σ * opD)
-            dropzeros!(opC)
-
-            Ker = Kernel(CuSparseMatrixCSR(opB), I,
-                         CuSparseMatrixCSR(opC))
-
-            push!(dictionary_keys, (σ, βτ))
-            push!(dictionary_values, Ker)
-        end
-    end
-
-    KernelDict = Dictionary(dictionary_keys, dictionary_values)
-
-    cstate = current_state!(Memory)
-    evaluate_ψ!(PDE, grid, cstate)
-
-    power_startup = system_power(Memory, grid)
-    energy_startup = system_energy(Memory, PDE, grid)
-
-    startup_stats!(Stats, power_startup, energy_startup)
-
-    Meth = M1(grid, KernelDict, linear_solver_params, time_substeps, stopping_criteria,
-              zero(FloatType))
-    #Return must be Method, Memory, Stats
-    Meth, Memory, Stats
 end
 
-@inline function update_component!(method, memory, stats, PDE, τ, σ, component_index)
+@inline function update_component!(method::M2, memory, stats, PDE, τ, σ, component_index)
+    iτhalf = (τ / 2) * im
+    Γ = junction_coefficient(PDE)
+
     current_state = current_state!(memory)
     grid_measure = sqrt(measure(method.grid))
     solved = false
 
     ψ = view(current_state, :, component_index)
     zₗ = memory.component_temp
+
     #dst src
     copy!(zₗ, ψ)
 
@@ -170,11 +127,19 @@ end
     for _ in 1:get_max_iterations(stopping_criteria_m1)
         @. current_state_abs2 = abs2(current_state)
         @. temporary_abs2 = abs2(zₗ)
-        @. stage1 = zₗ + ψ
-        stage2 .= N(current_state_abs2, temporary_abs2, component_index)
-        @. b_temp = stage1 * stage2
-        mul!(stage1, opA, b_temp)
-        @. b_temp = -τ * stage1 + b0_temp
+
+        @. stage1 = N(current_state_abs2, temporary_abs2, component_index) # evaluation of N
+        @. b_temp = stage1 * zₗ # N ⊙ zₗ
+
+        junction!(PDE, memory, stage2, component_index) # evaluation of the junction Jⁿ
+        stage2 .= Γ # Γ * Jⁿ
+
+        b_temp .+= stage2 # N ⊙ zₗ + Γ * Jⁿ
+        b_temp .*= -iτhalf # -iτ/2 * (N ⊙ zₗ + Γ * Jⁿ)
+        b_temp .+= ψ # ψ - iτ/2 * (N ⊙ zₗ + Γ * Jⁿ)
+
+        mul!(stage1, opA, b_temp) # A * (ψ - iτ/2 * (N ⊙ zₗ + Γ * Jⁿ))
+
         gmres!(SolverMem, opB, b_temp; atol = get_atol(solver_params),
                rtol = get_rtol(solver_params),
                itmax = get_max_iterations(solver_params))
@@ -225,4 +190,4 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
     work_timer
 end
 
-export M1
+export M2
