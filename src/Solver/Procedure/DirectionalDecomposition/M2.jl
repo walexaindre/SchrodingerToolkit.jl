@@ -162,7 +162,7 @@ end
     nothing
 end
 
-function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
+function step!(method::M2, memory, stats, PDE, conf::SolverConfig)
     start_timer = time()
     grid = method.grid
 

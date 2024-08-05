@@ -83,9 +83,10 @@ jobs:
         env:
           DOCUMENTER_KEY: ${{ secrets.DOCUMENTER_KEY }}
       - name: Run doctests
-        shell: xvfb-run -a -s '-screen 0 1024x768x24' julia --project=docs/ --color=yes {0}
         run: |
+          xvfb-run -a -s '-screen 0 1024x768x24' julia --project=docs/ --color=yes -e '
           using Documenter: DocMeta, doctest
           using SchrodingerToolkit
           DocMeta.setdocmeta!(SchrodingerToolkit, :DocTestSetup, :(using SchrodingerToolkit); recursive=true)
-          doctest(SchrodingerToolkit)
+          doctest(SchrodingerToolkit)'
+        shell: bash

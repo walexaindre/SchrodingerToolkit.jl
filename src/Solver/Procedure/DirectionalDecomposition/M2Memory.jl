@@ -73,11 +73,9 @@ function aux_sys_energy_trapping_potential(PDE,curr_state)
     V = get_trapping_potential(PDE)
     grid_points = collect_points(grid)|> typeof(curr_state)
 
-
-
     for comp_i in 1:ncomponents(PDE)
         trapping_potential(PDE,comp_i)
-        sum(V.() .* abs2.(curr_state))
+        sum(V.(grid_points) .* abs2.(curr_state))
 
     end
 
