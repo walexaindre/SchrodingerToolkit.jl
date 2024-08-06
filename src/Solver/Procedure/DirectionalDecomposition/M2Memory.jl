@@ -60,10 +60,9 @@ function M2Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
              energy_solver_params)
 end
 
-function system_perturbation_of_total_mass(M::M2Memory, PDE, grid)
+@inline function aux_josephson_power(M::M2Memory, τ,
+                             Γ)
     curr_state = current_state!(M)
-    coef = junction_coefficient(PDE)
-    τ = grid.τ
 
     josephson_energy = zero(eltype(curr_state))
 
@@ -74,15 +73,27 @@ function system_perturbation_of_total_mass(M::M2Memory, PDE, grid)
         end
     end
 
-    josephson_energy *= (τ * coef)
+    josephson_energy *= (τ * Γ)
 
+    josephson_energy
+end
+
+@inline function system_power(M::M2Memory, grid)
+    curr_state = current_state!(M)
+
+    measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
+end
+
+@inline function system_total_power(M::M2Memory, PDE::PDEq, grid) where {PDEq<:SchrodingerPDE}
+    curr_state = current_state!(M)
+    aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
     measure(grid) * sum(sum(abs2.(curr_state); dims = 1)) - imag(josephson_energy)
 end
 
-function system_power(M::M2Memory, grid)
-    curr_state = current_state!(M)
-    
-    measure(grid) * vec(sum(abs2.(curr_state); dims = 1)) - imag(josephson_energy)
+@inline function system_total_power(M::M2Memory, PDE::PDEq, grid,
+                            power_per_component) where {PDEq<:SchrodingerPDE}
+    aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
+    sum(power_per_component) - imag(josephson_energy)
 end
 
 function aux_sys_energy_josephson(PDE, curr_state)
@@ -101,16 +112,17 @@ function aux_sys_energy_josephson(PDE, curr_state)
     Γ * real(partial_res)
 end
 
-function aux_sys_energy_trapping_potential(PDE, curr_state)
+function aux_sys_energy_trapping_potential(PDE, grid, curr_state)
     grid_points = typeof(curr_state)(collect_points(grid))
 
     partial_res = zero(eltype(curr_state))
 
     for comp_i in 1:ncomponents(PDE)
         V = trapping_potential(PDE, comp_i)
-        partial_res .+= sum(V.(grid_points) .* abs2.(curr_state))
+
+        partial_res += sum(V(grid_points) .* abs2.(curr_state))
     end
-    partial_res
+    real(partial_res)
 end
 
 function system_energy(M::M2Memory, PDE, grid)
@@ -149,8 +161,10 @@ function system_energy(M::M2Memory, PDE, grid)
     energy += vecenergy[1]
 
     aux_josephson = aux_sys_energy_josephson(PDE, components)
-    aux_trapping_potential = aux_sys_energy_trapping_potential(PDE, components)
+    aux_trapping_potential = aux_sys_energy_trapping_potential(PDE, grid, components)
     println("aux_josephson: ", aux_josephson)
     println("aux_trapping_potential: ", aux_trapping_potential)
-    real(energy) * measure(grid) + aux_josephson + aux_trapping_potential
+    ren = real(energy) * measure(grid) + aux_josephson + aux_trapping_potential
+    println("sys_energy: ", ren)
+    ren
 end

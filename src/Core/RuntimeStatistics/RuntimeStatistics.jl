@@ -152,7 +152,7 @@ end
 """
 function calculate_diff_system_power(stats::Stats,
                                      index) where {Stats<:RuntimeStats}
-    startup_power = startup_power(stats)
+    startup_power = start_power(stats, index)
 
     return abs.(system_power(stats, index)[1:length(stats)] .- startup_power)
 end

@@ -47,15 +47,24 @@ function M1Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
     vecmem = vzeros(ComplexVectorType, mesh_elems)
     arrmem = vzeros(ComplexArrayType, (mesh_elems, ncomp))
 
-    M1Memory(arrmem, copy(arrmem), vecmem, copy(vecmem), copy(vecmem),copy(vecmem), copy(vecmem),
+    M1Memory(arrmem, copy(arrmem), vecmem, copy(vecmem), copy(vecmem), copy(vecmem),
+             copy(vecmem),
              copy(vecmem),
              opA, opD, initialize_gmres_kylov_solver(vecmem, krylov_gmres_memory),
              energy_solver_params)
 end
 
-function system_power(M::M1Memory, grid)
+@inline function system_power(M::M1Memory, grid)
     curr_state = current_state!(M)
     measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
+end
+
+@inline function system_total_power(M::M1Memory, grid::AG) where{AG<:AbstractPDEGrid}
+    sum(system_power(M, grid))
+end
+
+@inline function system_total_power(M::M1Memory, power_per_component::Power) where {Power<:AbstractVector}
+    sum(power_per_component)
 end
 
 function system_energy(M::M1Memory, PDE, grid)

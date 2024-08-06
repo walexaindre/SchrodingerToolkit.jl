@@ -27,6 +27,8 @@ for i in 1:250
     sleep(0.5)
 end
 
+
+
 systemnd!(ax3, Memory, Grid, 2)
 
 g
