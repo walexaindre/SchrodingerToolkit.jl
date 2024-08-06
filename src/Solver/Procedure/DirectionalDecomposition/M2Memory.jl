@@ -1,3 +1,14 @@
+#Temporary workaround before this is patched at CUDA.jl
+function SparseArrays.spdiagm(v::CuArray{Tv}) where {Tv}
+    nzVal = v
+    N = Int32(length(v))
+
+    colPtr = CuArray(one(Int32):(N + one(Int32)))
+    rowVal = CuArray(one(Int32):N)
+    dims = (N, N)
+    CuSparseMatrixCSC(colPtr, rowVal, nzVal, dims)
+end
+
 struct M2Memory{RealType,ComplexType<:Complex{RealType},
                 ComplexVectorType<:AbstractVector{ComplexType},
                 ComplexArrayType<:AbstractArray{ComplexType,2},SolverStorage,ItSolver,
@@ -31,6 +42,24 @@ end
 
 @inline energy_solver_params(memory::M2Memory) = memory.energy_solver_params
 
+function M2Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf, grid,
+                  opA,
+                  opD; krylov_gmres_memory = 20,
+                  energy_solver_params = IterativeLinearSolver(backend_type(conf))) where {ComplexVectorType,
+                                                                                           ComplexArrayType}
+    ncomp = ncomponents(PDE)
+    mesh_elems = length(grid)
+
+    vecmem = vzeros(ComplexVectorType, mesh_elems)
+    arrmem = vzeros(ComplexArrayType, (mesh_elems, ncomp))
+
+    M2Memory(arrmem, copy(arrmem), vecmem, copy(vecmem), copy(vecmem), copy(vecmem),
+             copy(vecmem),
+             copy(vecmem),
+             opA, opD, initialize_gmres_kylov_solver(vecmem, krylov_gmres_memory),
+             energy_solver_params)
+end
+
 function system_perturbation_of_total_mass(M::M2Memory, PDE, grid)
     curr_state = current_state!(M)
     coef = junction_coefficient(PDE)
@@ -52,10 +81,13 @@ end
 
 function system_power(M::M2Memory, grid)
     curr_state = current_state!(M)
+    
     measure(grid) * vec(sum(abs2.(curr_state); dims = 1)) - imag(josephson_energy)
 end
 
-function aux_sys_energy_josephson(Γ, curr_state)
+function aux_sys_energy_josephson(PDE, curr_state)
+    Γ = junction_coefficient(PDE)
+
     partial_res = zero(eltype(curr_state))
     for comp_i in 1:ncomponents(PDE)
         for comp_j in 1:ncomponents(PDE)
@@ -69,22 +101,21 @@ function aux_sys_energy_josephson(Γ, curr_state)
     Γ * real(partial_res)
 end
 
-function aux_sys_energy_trapping_potential(PDE,curr_state)
-    V = get_trapping_potential(PDE)
-    grid_points = collect_points(grid)|> typeof(curr_state)
+function aux_sys_energy_trapping_potential(PDE, curr_state)
+    grid_points = typeof(curr_state)(collect_points(grid))
+
+    partial_res = zero(eltype(curr_state))
 
     for comp_i in 1:ncomponents(PDE)
-        trapping_potential(PDE,comp_i)
-        sum(V.(grid_points) .* abs2.(curr_state))
-
+        V = trapping_potential(PDE, comp_i)
+        partial_res .+= sum(V.(grid_points) .* abs2.(curr_state))
     end
-
+    partial_res
 end
 
 function system_energy(M::M2Memory, PDE, grid)
     A = M.opA
     D = M.opD
-
     state_abs2 = M.current_state_abs2
     stage1 = M.stage1
     components = current_state!(M)
@@ -117,5 +148,9 @@ function system_energy(M::M2Memory, PDE, grid)
     vecenergy = Vector(sum(stage1; dims = 1))
     energy += vecenergy[1]
 
-    real(energy) * measure(grid)
+    aux_josephson = aux_sys_energy_josephson(PDE, components)
+    aux_trapping_potential = aux_sys_energy_trapping_potential(PDE, components)
+    println("aux_josephson: ", aux_josephson)
+    println("aux_trapping_potential: ", aux_trapping_potential)
+    real(energy) * measure(grid) + aux_josephson + aux_trapping_potential
 end

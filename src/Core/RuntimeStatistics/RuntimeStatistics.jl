@@ -6,6 +6,8 @@ Base.length(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} 
 @inline islocked(R::RuntimeStats) = R.locked
 @inline islog(R::RuntimeStats) = R.log_data
 
+@inline current_iteration(R::RuntimeStats) = R.current_iteration
+
 @inline start_energy(R::RuntimeStats) = R.system_energy[end]
 @inline system_energy(R::RuntimeStats) = R.system_energy
 @inline system_energy(R::RuntimeStats, index) = R.system_energy[index]
@@ -183,23 +185,7 @@ function update_stats!(stats::Stats, step_time, power_per_component,
     end
 end
 
-#deprecated
-function update_stats!(stats::Stats, time, PDE, Grid, Mem,
-                       ItStop) where {Stats<:RuntimeStats}
-    if !islocked(stats)
-        if stats.log_data
-            idx = stats.store_index
-            stats.step_time[idx] = time
-            update_power!(stats, system_power(Grid, Mem), idx)
-            update_system_energy!(stats, system_energy(PDE, Grid, Mem, ItStop), idx)
-            stats.store_index += 1
-            stats.log_data = false
-        end
-        advance_iteration!(stats)
-    else
-        error("Stats are locked")
-    end
-end
+
 
 function serialize(array, len)
     output = vundef(typeof(array), len + 1)
@@ -298,76 +284,7 @@ function deserialize(::Type{RuntimeStats}, path::String)
                  store_index)
 end
 
-#deprecated
-function startup_stats(stats::Stats, PDE, Grid, Mem,
-                       ItStop) where {Stats<:RuntimeStats}
-    last_index = lastindex(stats.step_time)
-
-    evaluate_ψ(PDE, Grid, Mem)
-
-    update_power!(stats, system_power(Grid, Mem), last_index)
-    update_system_energy!(stats, system_energy(PDE, Grid, Mem, ItStop), last_index)
-    advance_iteration!(stats)
-end
-
-#deprecated
-function initialize_stats(::Type{VectorType}, PDE, Grid::PerGrid, Mem, ItStop,
-                          log_freq::IntType,
-                          log_solverinfo::Bool = true) where {IntType,FloatType,
-                                                              PerGrid<:PeriodicGrid{IntType,
-                                                                                    FloatType},
-                                                              VectorType<:AbstractArray}
-    tsteps = estimate_timesteps(PDE, Grid)
-    τ = Grid.τ
-    stats = initialize_stats(VectorType, ncomponents(PDE), log_freq, τ,
-                             tsteps, log_solverinfo)
-    startup_stats(stats, PDE, Grid, Mem, ItStop)
-    stats
-end
-
-#deprecated
-@inline function system_power(Grid, Memory)
-    measure(Grid) * vec(sum(abs2.(Memory.current_state); dims = 1))
-end
-
-#deprecated
-@inline function system_energy(PDE, Grid, Mem, ItStop)
-    preA = Mem.preA
-    A = Mem.opA
-    D = Mem.opD
-    components = Mem.current_state
-    state_abs2 = Mem.current_state_abs2
-    stage1 = Mem.stage1
-
-    @. state_abs2 = abs2(components)
-
-    F = get_field(PDE)
-
-    energy = zero(eltype(components))
-
-    σ_collection = get_σ(PDE)
-
-    for (idx, σ) in enumerate(σ_collection)
-        @views comp = components[:, idx]
-        b = D * comp
-
-        gmres!(Mem.solver_memory,
-               A,
-               b;
-               restart = true,
-               N = preA,
-               atol = get_atol(ItStop),
-               rtol = get_rtol(ItStop),
-               itmax = get_max_iterations(ItStop))
-
-        energy -= σ * dot(comp, Mem.solver_memory.x)
-    end
-    stage1 .= F(state_abs2)
-    vecenergy = Vector(sum(stage1; dims = 1))
-    energy += vecenergy[1]
-    real(energy) * measure(Grid)
-end
 
 export initialize_stats, update_stats!, update_power!, update_system_energy!,
        system_power, system_energy, deserialize, serialize, calculate_diff_system_energy,
-       calculate_diff_system_power, start_power, start_energy, islocked
+       calculate_diff_system_power, start_power, start_energy, islocked,current_iteration,islog

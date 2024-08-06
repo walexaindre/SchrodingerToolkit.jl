@@ -15,32 +15,11 @@ stopping_criteria(method::M2) = method.stopping_criteria
 time_collection(method::M2) = method.time_collection
 linear_solve_params(method::M2) = method.linear_solve_params
 
-struct M2Kernel{KernelType}
-    LKernel::KernelType
+function opLn(PDE, grid, opA, opD, σ)
+    points = collect_points(grid)
+    Vᵢ = trapping_potential(PDE, 1) #[Todo] . [Fix this]
+    opA * spdiagm(Vᵢ(points)) - σ * opD
 end
-
-function M2Kernel(PDE, curr_state, opA, opD)
-    ncomp = ncomponents(PDE)
-    points = typeof(curr_state)(collect_points(grid))
-
-    for comp_i in 1:ncomp
-        Vᵢ = trapping_potential(PDE, comp_i)
-        σ = get_σ(PDE, comp_i)
-        opA * Vᵢ(points) - σ * opD
-    end
-end
-
-function SparseArrays.spdiagm(v::CuArray{Tv}) where {Tv}
-    nzVal = v
-    N = Int32(length(v))
-
-    colPtr = CuArray(one(Int32):(N + one(Int32)))
-    rowVal = CuArray(one(Int32):N)
-    dims = (N, N)
-    CuSparseMatrixCSC(colPtr, rowVal, nzVal, dims)
-end
-
-Base.display(spdiagm([1, 2, 3]))
 
 function M2(PDE::SPDE, conf::SolverConfig,
             grid::Grid;
@@ -66,6 +45,9 @@ function M2(PDE::SPDE, conf::SolverConfig,
     AI, AJ, AV = get_A_format_COO(FloatType, PeriodicAbstractGrid(grid),
                                   space_order(conf))
 
+    DI, DJ, DV = get_D_format_COO(FloatType, grid,
+                                  space_order(conf))
+
     opA = sparse(AI, AJ, ComplexCPUVector(AV))
 
     opD = sparse(DI, DJ, ComplexCPUVector(DV))
@@ -80,6 +62,70 @@ function M2(PDE::SPDE, conf::SolverConfig,
     dictionary_keys = Array{Tuple{FloatType,FloatType},1}(undef, 0)
 
     sizehint!(dictionary_keys, length(σset) * length(TimeMultipliers))
+
+    if iscpu(backend)
+        Memory = M2Memory(ComplexCPUVector, ComplexCPUArray, PDE, conf, grid,
+                          opA, opD)
+
+        dictionary_values = Array{Kernel{SparseMatrixCSR{1,ComplexType,IntType},
+                                         UniformScaling{Bool},
+                                         UniformScaling{Bool}},1}(undef,
+                                                                  0)
+
+        sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
+
+        for (σ, βτ) in product(σset,
+                               TimeMultipliers)
+            Ln = opLn(PDE, grid, opA, opD, σ)
+
+            opB = opA + im * (βτ / 2) * Ln
+
+            Ker = Kernel(opB, I,
+                         I)
+
+            push!(dictionary_keys, (σ, βτ))
+            push!(dictionary_values, Ker)
+        end
+
+    elseif isgpu(backend)
+        Memory = M2Memory(ComplexGPUVector, ComplexGPUArray, PDE, conf, grid,
+                          CuSparseMatrixCSR(opA), CuSparseMatrixCSR(opD);
+                          energy_solver_params = linear_solver_params)
+
+        dictionary_values = Array{Kernel{CuSparseMatrixCSR{ComplexType,Int32},
+                                         UniformScaling{Bool},
+                                         UniformScaling{Bool}},1}(undef,
+                                                                  0)
+        sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
+
+        for (σ, βτ) in product(σset,
+                               TimeMultipliers)
+            Ln = opLn(PDE, grid, opA, opD, σ)
+
+            opB = opA + im * (βτ / 2) * Ln
+
+            Ker = Kernel(CuSparseMatrixCSR(opB), I,
+                         I)
+
+            push!(dictionary_keys, (σ, βτ))
+            push!(dictionary_values, Ker)
+        end
+    end
+
+    KernelDict = Dictionary(dictionary_keys, dictionary_values)
+
+    cstate = current_state!(Memory)
+    evaluate_ψ!(PDE, grid, cstate)
+
+    power_startup = system_power(Memory, grid)
+    energy_startup = system_energy(Memory, PDE, grid)
+
+    startup_stats!(Stats, power_startup, energy_startup)
+
+    Meth = M2(grid, KernelDict, linear_solver_params, time_substeps, stopping_criteria,
+              zero(FloatType))
+    #Return must be Method, Memory, Stats
+    Meth, Memory, Stats
 end
 
 @inline function update_component!(method::M2, memory, stats, PDE, τ, σ, component_index)
@@ -114,7 +160,6 @@ end
 
     Kernel = method.Kernel[(σ, τ)]
 
-    opC = Kernel.opC
     opB = Kernel.opB
     opA = memory.opA
     #End of Method operators
@@ -123,12 +168,13 @@ end
     N = get_optimized(PDE)
     #End of N optimized
 
-    mul!(b0_temp, opC, ψ)
+    #mul!(b0_temp, opC, ψ)
+    @. current_state_abs2 = abs2(current_state)
+
     for _ in 1:get_max_iterations(stopping_criteria_m1)
-        @. current_state_abs2 = abs2(current_state)
         @. temporary_abs2 = abs2(zₗ)
 
-        @. stage1 = N(current_state_abs2, temporary_abs2, component_index) # evaluation of N
+        stage1 .= N(current_state_abs2, temporary_abs2, component_index) # evaluation of N
         @. b_temp = stage1 * zₗ # N ⊙ zₗ
 
         junction!(PDE, memory, stage2, component_index) # evaluation of the junction Jⁿ
@@ -140,10 +186,9 @@ end
 
         mul!(stage1, opA, b_temp) # A * (ψ - iτ/2 * (N ⊙ zₗ + Γ * Jⁿ))
 
-        gmres!(SolverMem, opB, b_temp; atol = get_atol(solver_params),
+        gmres!(SolverMem, opB, stage1; atol = get_atol(solver_params),
                rtol = get_rtol(solver_params),
                itmax = get_max_iterations(solver_params))
-        copy!(zₗ, SolverMem.x)
         update_solver_info!(stats, SolverMem.stats.timer, SolverMem.stats.niter)
 
         #NormBased
@@ -159,6 +204,10 @@ end
         end
     end
     copy!(ψ, zₗ)
+
+    if !solved
+        @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m1)) iterations..."
+    end
     nothing
 end
 
@@ -185,7 +234,6 @@ function step!(method::M2, memory, stats, PDE, conf::SolverConfig)
     energy = system_energy(memory, PDE, grid)
 
     work_timer = time() - start_timer
-
     update_stats!(stats, work_timer, power_per_component, energy)
     work_timer
 end
