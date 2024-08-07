@@ -29,6 +29,39 @@ end
 
 
 
-systemnd!(ax3, Memory, Grid, 2)
+systemnd!(ax3, Memory, Grid, 1)
 
 g
+
+ax4 = Axis3(g[1, 2])
+ax4.zlabel = ""
+ax4.yticks = WilkinsonTicks(6; k_min = 5)
+ax4.xticks = WilkinsonTicks(6; k_min = 5)
+
+
+for i in 1:250
+    for i in 1:15
+        step!(Problem)
+    end
+    empty!(ax3)
+    empty!(ax4)
+
+    ax3.title = "iteration $(current_iteration(Stats)) time $(round(Grid.τ*current_iteration(Stats),digits=2)) c: 1"
+    ax4.title = "iteration $(current_iteration(Stats)) time $(round(Grid.τ*current_iteration(Stats),digits=2)) c: 2"
+
+    systemnd!(ax3, Memory, Grid, 1)
+    systemnd!(ax4, Memory, Grid, 2)
+    sleep(0.5)
+end
+
+
+
+
+
+
+
+
+
+for i in 1:200
+    step!(Problem)
+end

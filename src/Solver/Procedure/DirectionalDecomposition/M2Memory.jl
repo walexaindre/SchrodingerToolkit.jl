@@ -61,7 +61,7 @@ function M2Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
 end
 
 @inline function aux_josephson_power(M::M2Memory, τ,
-                             Γ)
+                                     Γ)
     curr_state = current_state!(M)
 
     josephson_energy = zero(eltype(curr_state))
@@ -84,14 +84,15 @@ end
     measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
 end
 
-@inline function system_total_power(M::M2Memory, PDE::PDEq, grid) where {PDEq<:SchrodingerPDE}
+@inline function system_total_power(M::M2Memory, PDE::PDEq,
+                                    grid) where {PDEq<:SchrodingerPDE}
     curr_state = current_state!(M)
     aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
     measure(grid) * sum(sum(abs2.(curr_state); dims = 1)) - imag(josephson_energy)
 end
 
 @inline function system_total_power(M::M2Memory, PDE::PDEq, grid,
-                            power_per_component) where {PDEq<:SchrodingerPDE}
+                                    power_per_component) where {PDEq<:SchrodingerPDE}
     aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
     sum(power_per_component) - imag(josephson_energy)
 end
@@ -126,13 +127,15 @@ function aux_sys_energy_trapping_potential(PDE, grid, curr_state)
 end
 
 function system_energy(M::M2Memory, PDE, grid)
-    A = M.opA
-    D = M.opD
-    state_abs2 = M.current_state_abs2
-    stage1 = M.stage1
-    components = current_state!(M)
     sol_mem = solver_memory!(M)
     sol_params = energy_solver_params(M)
+
+    A = M.opA
+    D = M.opD
+
+    components = current_state!(M)
+    state_abs2 = M.current_state_abs2
+    stage1 = M.stage1
 
     @. state_abs2 = abs2(components)
     F = get_field(PDE)
@@ -153,18 +156,17 @@ function system_energy(M::M2Memory, PDE, grid)
                rtol = get_rtol(sol_params),
                itmax = get_max_iterations(sol_params))
 
-        energy -= σ * dot(comp, sol_mem.x)
+        energy += -σ * dot(comp, sol_mem.x)
     end
 
+
     stage1 .= F(state_abs2)
-    vecenergy = Vector(sum(stage1; dims = 1))
-    energy += vecenergy[1]
+
+    field_energy = sum(stage1)
 
     aux_josephson = aux_sys_energy_josephson(PDE, components)
     aux_trapping_potential = aux_sys_energy_trapping_potential(PDE, grid, components)
-    println("aux_josephson: ", aux_josephson)
-    println("aux_trapping_potential: ", aux_trapping_potential)
-    ren = real(energy) * measure(grid) + aux_josephson + aux_trapping_potential
-    println("sys_energy: ", ren)
-    ren
+
+    measure(grid) *
+    real(energy + field_energy + aux_josephson + aux_trapping_potential)
 end

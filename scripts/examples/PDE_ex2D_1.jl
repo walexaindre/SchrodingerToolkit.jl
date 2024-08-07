@@ -12,15 +12,15 @@ const T = 40.0
 const Ω = (-8.0,8.0) #Domain
 
 function f₁(x)
-    @. @views σ₁₁*x[:,1] + σ₁₂*x[:,2]
+    @. @views -σ₁₁*x[:,1] - σ₁₂*x[:,2]
 end
 
 function f₂(x)
-    @. @views σ₂₁*x[:,1] + σ₂₂*x[:,2]
+    @. @views -σ₂₁*x[:,1] - σ₂₂*x[:,2]
 end
 
 function F(x)
-    @. @views 0.5*(σ₁₁*x[:,1]^2 + σ₂₂*x[:,2]^2) + σ₁₂*x[:,1]*x[:,2]
+    @. @views -0.5*(σ₁₁*x[:,1]^2 + σ₂₂*x[:,2]^2) - σ₁₂*x[:,1]*x[:,2]
 end
 
 function ψ₁(x)

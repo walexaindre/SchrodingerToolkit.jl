@@ -1,5 +1,7 @@
-@inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Fn,InitialCondition,
+@inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Γv,Fn,
+                                                                  InitialCondition,
                                                                   TrappingPotential}) where {Tv,
+                                                                                             Γv,
                                                                                              Fn,
                                                                                              InitialCondition,
                                                                                              TrappingPotential} =
@@ -165,17 +167,18 @@ end
 
 Check if the Schrodinger PDE has a Josephson Junction and return the sum of the current state if it has one.
 """
-@inline function junction!(SPDE::PDEeq, memory, output,index) where {PDEeq<:SchrodingerPDE}
+@inline function junction!(SPDE::PDEeq, memory, output,
+                           index) where {PDEeq<:SchrodingerPDE}
     curr_state = current_state!(memory)
 
     if has_josephson_junction(SPDE)
         if ncomponents(SPDE) == 2
-            output .= curr_state[:,3-index]
+            output .= curr_state[:, 3 - index]
         else
             valid_rank = collect(1:ncomponents(SPDE)) #Get the valid ranks
-            deleteat!(valid_rank,index) #Delete the current index
-            rank_tosum = view(curr_state,:,valid_rank) #Get a view of the current state without the current index
-            output .= sum(rank_tosum,dims=2) #Reduce
+            deleteat!(valid_rank, index) #Delete the current index
+            rank_tosum = view(curr_state, :, valid_rank) #Get a view of the current state without the current index
+            output .= sum(rank_tosum; dims = 2) #Reduce
         end
 
     else
@@ -183,10 +186,10 @@ Check if the Schrodinger PDE has a Josephson Junction and return the sum of the 
     end
 end
 
-@inline junction_coefficient(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = get_Γ(SPDE,1)
+@inline junction_coefficient(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = get_Γ(SPDE, 1)
 
-@inline trapping_potential(SPDE::PDEeq,index) where {PDEeq<:SchrodingerPDE} = get_V(SPDE,index)
-
+@inline trapping_potential(SPDE::PDEeq, index) where {PDEeq<:SchrodingerPDE} = get_V(SPDE,
+                                                                                     index)
 
 "Estimate the number of timesteps for the Schrodinger PDE"
 @inline function estimate_timesteps(PDE::SPDE,

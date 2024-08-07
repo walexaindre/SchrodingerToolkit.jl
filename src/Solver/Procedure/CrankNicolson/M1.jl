@@ -55,6 +55,7 @@ function M1(PDE::SPDE, conf::SolverConfig,
     time_comp = get_time_composition(time_order(conf))
 
     σset = Set(get_σ(PDE))
+
     TimeMultipliers = grid.τ * coefficients(time_comp)
 
     time_substeps = Tuple(grid.τ * collect(time_comp))
@@ -178,7 +179,6 @@ end
         gmres!(SolverMem, opB, b_temp; atol = get_atol(solver_params),
                rtol = get_rtol(solver_params),
                itmax = get_max_iterations(solver_params))
-        copy!(zₗ, SolverMem.x)
         update_solver_info!(stats, SolverMem.stats.timer, SolverMem.stats.niter)
 
         #NormBased
@@ -194,6 +194,10 @@ end
         end
     end
     copy!(ψ, zₗ)
+
+    if !solved
+        @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m1)) iterations..."
+    end
     nothing
 end
 

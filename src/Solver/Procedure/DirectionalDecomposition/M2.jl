@@ -78,7 +78,7 @@ function M2(PDE::SPDE, conf::SolverConfig,
                                TimeMultipliers)
             Ln = opLn(PDE, grid, opA, opD, σ)
 
-            opB = opA + im * (βτ / 2) * Ln
+            opB = opA + im * (βτ / 4) * Ln
 
             Ker = Kernel(opB, I,
                          I)
@@ -102,7 +102,7 @@ function M2(PDE::SPDE, conf::SolverConfig,
                                TimeMultipliers)
             Ln = opLn(PDE, grid, opA, opD, σ)
 
-            opB = opA + im * (βτ / 2) * Ln
+            opB = opA + im * (βτ / 4) * Ln
 
             Ker = Kernel(CuSparseMatrixCSR(opB), I,
                          I)
@@ -129,7 +129,7 @@ function M2(PDE::SPDE, conf::SolverConfig,
 end
 
 @inline function update_component!(method::M2, memory, stats, PDE, τ, σ, component_index)
-    iτhalf = (τ / 2) * im
+    iτhalf = (τ / 4) * im
     Γ = junction_coefficient(PDE)
 
     current_state = current_state!(memory)
@@ -156,7 +156,7 @@ end
 
     #Method operators
     solver_params = linear_solve_params(method)
-    stopping_criteria_m1 = stopping_criteria(method)
+    stopping_criteria_m2 = stopping_criteria(method)
 
     Kernel = method.Kernel[(σ, τ)]
 
@@ -170,21 +170,21 @@ end
 
     #mul!(b0_temp, opC, ψ)
     @. current_state_abs2 = abs2(current_state)
-
-    for _ in 1:get_max_iterations(stopping_criteria_m1)
+    junction!(PDE, memory, b0_temp, component_index) # evaluation of the junction Jⁿ
+    b0_temp .*= Γ # Γ * Jⁿ
+    for _ in 1:get_max_iterations(stopping_criteria_m2)
         @. temporary_abs2 = abs2(zₗ)
-
+        stage2 .= zₗ + ψ # zₗ + ψ
+        stage2 .*= 0.5
         stage1 .= N(current_state_abs2, temporary_abs2, component_index) # evaluation of N
-        @. b_temp = stage1 * zₗ # N ⊙ zₗ
+        @. b_temp = stage1 * stage2 # N ⊙ (zₗ+ψ)
 
-        junction!(PDE, memory, stage2, component_index) # evaluation of the junction Jⁿ
-        stage2 .= Γ # Γ * Jⁿ
+        b_temp .+= b0_temp # N ⊙ (zₗ+ψ) + Γ * Jⁿ
+        b_temp .*= -iτhalf # -iτ/4 * (N ⊙ (zₗ+ψ) + Γ * Jⁿ)
 
-        b_temp .+= stage2 # N ⊙ zₗ + Γ * Jⁿ
-        b_temp .*= -iτhalf # -iτ/2 * (N ⊙ zₗ + Γ * Jⁿ)
-        b_temp .+= ψ # ψ - iτ/2 * (N ⊙ zₗ + Γ * Jⁿ)
+        b_temp .+= ψ # ψ - iτ/4 * (N ⊙ (zₗ+ψ) + Γ * Jⁿ)
 
-        mul!(stage1, opA, b_temp) # A * (ψ - iτ/2 * (N ⊙ zₗ + Γ * Jⁿ))
+        mul!(stage1, opA, b_temp) # A * (ψ - iτ/4 * (N ⊙ (zₗ+ψ) + Γ * Jⁿ))
 
         gmres!(SolverMem, opB, stage1; atol = get_atol(solver_params),
                rtol = get_rtol(solver_params),
@@ -192,13 +192,14 @@ end
         update_solver_info!(stats, SolverMem.stats.timer, SolverMem.stats.niter)
 
         #NormBased
-        copy!(stage2, zₗ)
-        copy!(zₗ, SolverMem.x)
+        copy!(stage2, zₗ) #dst src
+        copy!(zₗ, SolverMem.x)#dst src
+        zₗ .= 2 * SolverMem.x - ψ
         @. stage1 = stage2 - zₗ
 
         znorm = grid_measure * norm(stage1)
         solved = znorm <=
-                 get_atol(stopping_criteria_m1) + get_rtol(stopping_criteria_m1) * znorm
+                 get_atol(stopping_criteria_m2) + get_rtol(stopping_criteria_m2) * znorm
         if solved
             break
         end
@@ -206,7 +207,7 @@ end
     copy!(ψ, zₗ)
 
     if !solved
-        @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m1)) iterations..."
+        @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m2)) iterations..."
     end
     nothing
 end
