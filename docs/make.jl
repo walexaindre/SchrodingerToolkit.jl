@@ -11,7 +11,7 @@ makedocs(;
          sitename = "SchrodingerToolkit.jl",
          format = Documenter.HTML(;
                                   canonical = "https://walexaindre.github.io/SchrodingerToolkit.jl",
-                                  edit_link = "dev",
+                                  edit_link = "",
                                   assets = String[],),
          pages = ["Package Overview" => "index.md",
                   "Usage" => ["Backend selection" => "./Usage/backend.md",
