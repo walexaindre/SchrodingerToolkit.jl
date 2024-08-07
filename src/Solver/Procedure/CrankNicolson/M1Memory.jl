@@ -100,7 +100,7 @@ function system_energy(M::M1Memory, PDE, grid)
     end
 
     stage1 .= F(state_abs2)
-    vecenergy = -sum(stage1; dims = 1)
+    vecenergy = -sum(stage1)
     energy += vecenergy
 
     real(energy) * measure(grid)
