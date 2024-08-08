@@ -211,21 +211,20 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
     for τ in time_collection(method)
         #Forward
         for (component_index, σ) in enumerate(σ_forward)
-            update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
         end
         #Backward
 
         for (component_index, σ) in zip(length(σ_backward):-1:1, σ_backward)
-            update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            update_component_update_steps!(stats, steps)
         end
     end
 
-    power_per_component = system_power(memory, grid)
-    energy = system_energy(memory, PDE, grid)
-
     work_timer = time() - start_timer
 
-    update_stats!(stats, work_timer, power_per_component, energy)
+    update_stats!(stats, memory, grid, PDE,
+                  work_timer)
     work_timer
 end
 

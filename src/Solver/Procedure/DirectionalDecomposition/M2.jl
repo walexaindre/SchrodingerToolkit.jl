@@ -172,7 +172,9 @@ end
     @. current_state_abs2 = abs2(current_state)
     junction!(PDE, memory, b0_temp, component_index) # evaluation of the junction Jⁿ
     b0_temp .*= Γ # Γ * Jⁿ
-    for _ in 1:get_max_iterations(stopping_criteria_m2)
+
+    exit_iterations = 0
+    for l in 1:get_max_iterations(stopping_criteria_m2)
         @. temporary_abs2 = abs2(zₗ)
         stage2 .= zₗ + ψ # zₗ + ψ
         stage2 .*= 0.5
@@ -201,6 +203,7 @@ end
         solved = znorm <=
                  get_atol(stopping_criteria_m2) + get_rtol(stopping_criteria_m2) * znorm
         if solved
+            exit_iterations = l
             break
         end
     end
@@ -209,7 +212,7 @@ end
     if !solved
         @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m2)) iterations..."
     end
-    nothing
+    exit_iterations
 end
 
 function step!(method::M2, memory, stats, PDE, conf::SolverConfig)
@@ -222,20 +225,20 @@ function step!(method::M2, memory, stats, PDE, conf::SolverConfig)
     for τ in time_collection(method)
         #Forward
         for (component_index, σ) in enumerate(σ_forward)
-            update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            update_component_update_steps!(stats, steps)
         end
-        #Backward
 
+        #Backward
         for (component_index, σ) in zip(length(σ_backward):-1:1, σ_backward)
-            update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            update_component_update_steps!(stats, steps)
         end
     end
-
-    power_per_component = system_power(memory, grid)
-    energy = system_energy(memory, PDE, grid)
-
     work_timer = time() - start_timer
-    update_stats!(stats, work_timer, power_per_component, energy)
+
+    update_stats!(stats, memory, grid, PDE,
+                  work_timer)
     work_timer
 end
 

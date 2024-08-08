@@ -6,8 +6,12 @@ This abstract type provides basic tracking for runtime analysis of PDE simulatio
 # Functions that you need to implement your own `Stats` type:
 
 - `length(Stats)`: Current number of taken samples.
-- `islog(Stats)`: Returns `true` if the `Stats` is logging linear solver data.
+
+- `islog(Stats)`: Returns `true` if the `Stats` is logging problem related data.
 - `islocked(Stats)`: Returns `true` if the `Stats` is locked meaning that you can not modify it. This is used to prevent data corruption after deserialization.
+- `islog_solver_info(Stats)`: Returns `true` if the `Stats` is logging solver related data.
+- `islog_system_total_power(Stats)`: Returns `true` if the `Stats` is logging the total power of the system.
+- `islog_component_update_steps(Stats)`: Returns `true` if the `Stats` is logging the number of times that the components are updated.
 
 - `initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},ncomponents,log_freq,time_steps,islog_solver_info::Bool)`: Initialize the memory underlying `Stats` type. 
 - `startup_stats!(Stats,start_power,start_energy)`: Initialize the power and energy at time step `0`. This is usally stored at the last index of the memory.
@@ -44,20 +48,34 @@ This is because the `Stats` type is used to store incoming data from the simulat
 """
 abstract type AbstractRuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType} end
 
-struct ComponentPower{FloatType,ArrayType<:AbstractArray{FloatType}} <: AbstractVector{FloatType}
+struct ComponentPower{FloatType,ArrayType<:AbstractArray{FloatType}} <:
+       AbstractVector{FloatType}
     power::ArrayType
 end
 
-mutable struct RuntimeStats{IntType,FloatType,IntVectorType,FloatVectorType<:AbstractArray{FloatType},Power<:Tuple{Vararg{ComponentPower{FloatType,FloatVectorType}}}} <: AbstractRuntimeStats{IntType,FloatType,IntVectorType,FloatVectorType} 
+mutable struct RuntimeStats{IntType,FloatType,IntVectorType,
+                            FloatVectorType<:AbstractArray{FloatType},
+                            Power<:Tuple{Vararg{ComponentPower{FloatType,FloatVectorType}}}} <:
+               AbstractRuntimeStats{IntType,FloatType,IntVectorType,FloatVectorType}
     const system_energy::FloatVectorType
     const system_power::Power
+
+    const system_total_power::FloatVectorType
+
     const step_time::FloatVectorType
+
     const solver_time::FloatVectorType
     const solver_iterations::IntVectorType
+
+    const component_update_steps::IntVectorType
     const log_frequency::IntType
-    const locked::Bool
     
+    # Index: 1 = log_solver_info, 2 = log_system_total_power, 3 = log_component_update_steps, 4 = locked, 5 = log_stats, 6 - 8 = unused
+    const config::NTuple{8,Bool}
+
     log_data::Bool
+
+    component_update_call_count::IntType
     current_iteration::IntType
     store_index::IntType
 end

@@ -1,5 +1,15 @@
+function ConfigRuntimeStatsOptions(log_frequency::IntType = 10;
+                                   log_solver_info::Bool = true,
+                                   log_system_total_power::Bool = false,
+                                   log_component_update_steps::Bool = false,
+                                   locked::Bool = false,
+                                   log_stats::Bool = true) where {IntType}
+    return (log_frequency, log_solver_info, log_system_total_power,
+            log_component_update_steps, locked, log_stats)
+end
+
 Base.show(io::IO, conf::SolverConfig) = print(io,
-                                              "SolverConfig:\n\
+                                              "\nSolverConfig:\n\
                                               \n\ttime order:        $(conf.time_order),\
                                               \n\tspace order:       $(conf.space_order),\
                                               \n\tbackend type:      $(conf.backend_type),\
@@ -13,7 +23,7 @@ function SolverParameters(::Type{ComputeBackend}, dim::IntType,
                           spaceorder = ntuple(Returns(:ord2), dim),
                           timeorder = :tord2_1_1;
                           verbose::IntType = zero(IntType),
-                          stats::Tuple{Bool,IntType,Bool} = (true, IntType(5),true),
+                          stats::Tuple{IntType,Vararg{Bool,5}} = ConfigRuntimeStatsOptions(IntType(10)),
                           debug::Tuple{Bool,IntType,IntType} = (false, zero(IntType),
                                                                 zero(IntType)),
                           show_progress::Bool = false,
@@ -29,21 +39,33 @@ function SolverParameters(::Type{ComputeBackend}, dim::IntType,
                  debug)
 end
 
-
 Base.ndims(conf::SolverConfig) = length(conf.space_order)
 
-backend_type(conf::SolverConfig) = conf.backend_type
-debug(conf::SolverConfig) = conf.debug[1]
-debug_level(conf::SolverConfig) = conf.debug[2]
-debug_sublevel(conf::SolverConfig) = conf.debug[3]
-stats(conf::SolverConfig) = conf.stats[1]
-stats_logfreq(conf::SolverConfig) = conf.stats[2]
-stats_logsol(conf::SolverConfig) = conf.stats[3]
-verbose(conf::SolverConfig) = conf.verbose
-show_progress(conf::SolverConfig) = conf.show_progress
-output_folder(conf::SolverConfig) = conf.output_folder_path
-time_order(conf::SolverConfig) = conf.time_order
-space_order(conf::SolverConfig) = conf.space_order
+@inline backend_type(conf::SolverConfig) = conf.backend_type
+@inline debug(conf::SolverConfig) = conf.debug[1]
+@inline debug_level(conf::SolverConfig) = conf.debug[2]
+@inline debug_sublevel(conf::SolverConfig) = conf.debug[3]
+
+@inline stats_logfreq(conf::SolverConfig) = conf.stats[1]
+@inline stats_log_solver_info(conf::SolverConfig) = conf.stats[1 + 1]
+@inline stats_log_system_total_power(conf::SolverConfig) = conf.stats[2 + 1]
+@inline stats_log_component_update_steps(conf::SolverConfig) = conf.stats[3 + 1]
+@inline stats_locked(conf::SolverConfig) = conf.stats[4 + 1]
+@inline stats_log_stats(conf::SolverConfig) = conf.stats[5 + 1]
+
+@inline verbose(conf::SolverConfig) = conf.verbose
+@inline show_progress(conf::SolverConfig) = conf.show_progress
+@inline output_folder(conf::SolverConfig) = conf.output_folder_path
+@inline time_order(conf::SolverConfig) = conf.time_order
+@inline space_order(conf::SolverConfig) = conf.space_order
+
+Base.show(io::IO, prob::SchrodingerProblem) = print(io,
+                                                    "\nSchrodingerProblem:\n\
+                                                    \n\tMethod: $(method(prob)|>typeof),\
+                                                    \n\tMemory: $(memory(prob)|>typeof),\
+                                                    \n\tStats: $(stats(prob)|>typeof),\
+                                                    \n\tPDE: $(PDE(prob)|>typeof),\
+                                                    \n\tConfig: $(config(prob))")
 
 method(problem::SchrodingerProblem) = problem.Method
 memory(problem::SchrodingerProblem) = problem.Memory
@@ -79,8 +101,8 @@ config(problem::SchrodingerProblem) = problem.Config
 """
 function step! end
 
-@inline step!(P::SchrodingerProblem) = step!(method(P), memory(P),stats(P), PDE(P), config(P))
-
+@inline step!(P::SchrodingerProblem) = step!(method(P), memory(P), stats(P), PDE(P),
+                                             config(P))
 
 """
 
@@ -90,6 +112,5 @@ function step! end
 
 """
 function update_component! end
-    
 
-export  SolverParameters, step!, update_component!
+export SolverParameters, step!, update_component!
