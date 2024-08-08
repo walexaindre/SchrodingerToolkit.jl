@@ -428,8 +428,8 @@ Update the stats structure with the current time, power per component, system en
 This is to keep the stats structure consistent with the simulation. 
 For that reason is important to call this function at the end of the simulation step.
 """
-function update_stats!(stats::Stats, memory, grid, PDE,
-                       work_timer) where {Stats<:RuntimeStats}
+function update_stats!(stats::Stats, memory::MemType, grid, PDE,
+                       work_timer) where {Stats<:RuntimeStats, MemType<:AbstractMemory}
     if isregistering_stats(stats)
         if islog(stats)
             power_per_component = system_power(memory, grid)

@@ -1,3 +1,35 @@
+function Base.show(io::IO,Component::SchrodingerPDEComponent{Tv,Γv,Fn,
+                                                      InitialCondition,
+                                                      TrappingPotential}) where {Tv,
+                                                                                 Γv,
+                                                                                 Fn,
+                                                                                 InitialCondition,
+                                                                                 TrappingPotential}
+    println("SchrodingerPDEComponent:")
+    println("    σ: $(Component.σ)")
+    println("    f: $(Component.f |> typeof)")
+    println("    ψ: $(Component.ψ |> typeof)")
+    println("    V: $(Component.V |> typeof)")
+    println("    Γ: $(Component.Γ |> typeof)")
+end
+
+function Base.show(io::IO,PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential}
+    println("SchrodingerPDENonPolynomial{$N, $Tv}: ")
+    println("    Boundaries: $(PDE.boundaries)")
+    println("    Components: $(PDE.components)")
+    println("    Potential : $(PDE.F |> typeof)")
+    println("Final time: $(PDE.T)")
+end
+
+function Base.show(io::IO,PDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized}
+    println("SchrodingerPDEPolynomial{$N, $Tv}: ")
+    println("    Boundaries: $(PDE.boundaries)")
+    println("    Components: $(PDE.components)")
+    println("    Potential : $(PDE.F |> typeof)")
+    println("    Optimized : $(PDE.N |> typeof)")
+    println("Final time: $(PDE.T)")
+end
+
 @inline has_trapping_potential(Component::SchrodingerPDEComponent{Tv,Γv,Fn,
                                                                   InitialCondition,
                                                                   TrappingPotential}) where {Tv,
@@ -24,20 +56,20 @@
         return true
     end
 
-@inline has_josephson_junction(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_josephson_junction,
-                                                                                                                         PDE.components)
-@inline has_josephson_junction(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_josephson_junction,
-                                                                                                                                          PDE.components)
-@inline has_trapping_potential(PDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_trapping_potential,
-                                                                                                                         PDE.components)
-@inline has_trapping_potential(PDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_trapping_potential,
-                                                                                                                                          PDE.components)
+@inline has_josephson_junction(PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_josephson_junction,
+                                                                                                                          PDE.components)
+@inline has_josephson_junction(PDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_josephson_junction,
+                                                                                                                                           PDE.components)
+@inline has_trapping_potential(PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = any(has_trapping_potential,
+                                                                                                                          PDE.components)
+@inline has_trapping_potential(PDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = any(has_trapping_potential,
+                                                                                                                                           PDE.components)
 
 "Number of dimensions for the Schrodinger PDE"
-@inline Base.ndims(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = N
+@inline Base.ndims(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = N
 
 "Number of dimensions for the Schrodinger PDE"
-@inline Base.ndims(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = N
+@inline Base.ndims(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = N
 
 #"Number of components for the Schrodinger PDE"
 #@inline Base.length(SPDE::SchrodingerPDEPolynomic{N,Tv,Comp,Potential,Optimized}) where {N,Tv,Comp,Potential,Optimized} = length(Comp)
@@ -46,80 +78,80 @@
 #@inline Base.length(SPDE::SchrodingerPDENonPolynomic{N,Tv,Comp,Potential}) where {N,Tv,Comp,Potential} = length(Comp)
 
 "Type of the elements for the Schrodinger PDE"
-@inline Base.eltype(::Type{SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}}) where {N,Tv,MComp,Potential,Optimized} = Tv
+@inline Base.eltype(::Type{SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}}) where {N,Tv,MComp,Potential,Optimized} = Tv
 
 "Type of the elements for the Schrodinger PDE"
-@inline Base.eltype(::Type{SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}}) where {N,Tv,MComp,Potential} = Tv
+@inline Base.eltype(::Type{SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}}) where {N,Tv,MComp,Potential} = Tv
 
 "Boundary start and end point at index dimension"
-@inline get_boundary(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.boundaries[index]
+@inline get_boundary(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.boundaries[index]
 
 "Boundary start and end point at index dimension"
-@inline get_boundary(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.boundaries[index]
+@inline get_boundary(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.boundaries[index]
 
 "Obtain the component of the Schrodinger PDE at index"
-@inline get_component(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index]
+@inline get_component(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index]
 
 "Obtain the component of the Schrodinger PDE at index"
-@inline get_component(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index]
+@inline get_component(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index]
 
 "Dispersion coefficient for the Schrodinger PDE component at index"
-@inline get_σ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].σ
+@inline get_σ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].σ
 
-@inline get_σ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = ntuple(idx -> SPDE.components[idx].σ,
-                                                                                                                             length(SPDE.components))
+@inline get_σ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = ntuple(idx -> SPDE.components[idx].σ,
+                                                                                                                              length(SPDE.components))
 
 "Dispersion coefficient for the Schrodinger PDE component at index"
-@inline get_σ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].σ
+@inline get_σ(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].σ
 
-@inline get_σ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = ntuple(idx -> SPDE.components[idx].σ,
-                                                                                                            length(SPDE.components))
-
-"Function for the Schrodinger PDE component"
-@inline get_f(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].f
+@inline get_σ(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = ntuple(idx -> SPDE.components[idx].σ,
+                                                                                                             length(SPDE.components))
 
 "Function for the Schrodinger PDE component"
-@inline get_f(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].f
+@inline get_f(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].f
+
+"Function for the Schrodinger PDE component"
+@inline get_f(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].f
 
 "Initial condition for the Schrodinger PDE component"
-@inline get_ψ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].ψ
+@inline get_ψ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].ψ
 
 "Initial condition for the Schrodinger PDE component"
-@inline get_ψ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].ψ
+@inline get_ψ(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].ψ
 
 "Trapping potential for the i-th Schrodinger PDE component"
-@inline get_V(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].V
+@inline get_V(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].V
 
 "Trapping potential for the i-th Schrodinger PDE component"
-@inline get_V(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].V
+@inline get_V(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].V
 
 "Josephson Junction Coefficient for the i-th Schrodinger PDE component"
-@inline get_Γ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].Γ
+@inline get_Γ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].Γ
 
 "Josephson Junction Coefficient for the i-th Schrodinger PDE component"
-@inline get_Γ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].Γ
+@inline get_Γ(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index].Γ
 
 "Potential for the Schrodinger PDE"
-@inline get_field(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.F
+@inline get_field(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.F
 
 "Potential for the Schrodinger PDE"
-@inline get_field(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.F
+@inline get_field(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.F
 
 "Simplified polynomial to evade catastrophic cancellation"
-@inline get_optimized(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.N
+@inline get_optimized(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.N
 
 "Non polynomial potentials can't be optimized so return nothing"
-@inline get_optimized(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = nothing
+@inline get_optimized(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = nothing
 
 "Finish time for the Schrodinger PDE"
-@inline get_time_boundary(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.T
+@inline get_time_boundary(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized} = SPDE.T
 
 "Finish time for the Schrodinger PDE"
-@inline get_time_boundary(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.T
+@inline get_time_boundary(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential} = SPDE.T
 
 "Evaluation of the initial condition for the Schrodinger PDE"
-@inline function evaluate_ψ(SPDE::SchrodingerPDEPolynomic{N,Tv,MComp,Potential,
-                                                          Optimized}, P::PGrid,
+@inline function evaluate_ψ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,
+                                                           Optimized}, P::PGrid,
                             Memory) where {N,Tv,MComp,Potential,Optimized,
                                            PGrid<:PeriodicGrid}
     cstate = Memory.current_state
@@ -133,7 +165,7 @@
 end
 
 "Evaluation of the initial condition for the Schrodinger PDE"
-@inline function evaluate_ψ(SPDE::SchrodingerPDENonPolynomic{N,Tv,MComp,Potential},
+@inline function evaluate_ψ(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential},
                             P::PGrid,
                             Memory) where {N,Tv,MComp,Potential,PGrid<:PeriodicGrid}
     cstate = Memory.current_state

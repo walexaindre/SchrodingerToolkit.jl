@@ -13,7 +13,7 @@ struct M2Memory{RealType,ComplexType<:Complex{RealType},
                 ComplexVectorType<:AbstractVector{ComplexType},
                 ComplexArrayType<:AbstractArray{ComplexType,2},SolverStorage,ItSolver,
                 LinOp1,
-                LinOp2}
+                LinOp2} <: AbstractMemory
     current_state::ComplexArrayType
     current_state_abs2::ComplexArrayType
     temp_state_abs2::ComplexVectorType

@@ -87,4 +87,4 @@ function N(prev,next,idx)
 
 end
 
-PDE = SchrodingerPDEPolynomic((Ω,Ω),(C1,C2,C3,C4),F,N,T)
+PDE = SchrodingerPDEPolynomial((Ω,Ω),(C1,C2,C3,C4),F,N,T)

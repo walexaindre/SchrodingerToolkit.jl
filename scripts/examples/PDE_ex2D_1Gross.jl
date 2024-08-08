@@ -42,4 +42,4 @@ end
 C1 = SchrodingerPDEComponent(α₁, f₁, ψ₁, V1, Γ)
 C2 = SchrodingerPDEComponent(α₂, f₂, ψ₂, V2, Γ)
 
-PDE = SchrodingerPDEPolynomic((Ω, Ω), (C1, C2), F, N, T)
+PDE = SchrodingerPDEPolynomial((Ω, Ω), (C1, C2), F, N, T)

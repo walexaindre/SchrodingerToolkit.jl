@@ -25,4 +25,4 @@ Base.show(io::IO, param::NormBased) = print(io,
 Base.show(io::IO, param::FixedSteps) = print(io,
                                              "\nStoppingCriteria\nFixedSteps\nnsteps: $(param.nsteps)")
 
-export IterativeLinearSolver, NormBased, FixedSteps, DirectLinearSolver
+export IterativeLinearSolver, NormBased, FixedSteps, DirectLinearSolver, AbstractMemory

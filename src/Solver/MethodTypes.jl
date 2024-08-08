@@ -50,6 +50,8 @@ struct Kernel{LinOp1,LinOp2,LinOp3}
     opC::LinOp3
 end
 
+abstract type AbstractMemory end
+
 
 abstract type MethodProperty end
 
