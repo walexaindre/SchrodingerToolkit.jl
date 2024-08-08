@@ -234,4 +234,4 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
     work_timer
 end
 
-export M1
+export M1, assembly_time
