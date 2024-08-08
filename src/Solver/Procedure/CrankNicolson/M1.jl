@@ -7,12 +7,14 @@ struct M1{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
     linear_solve_params::ItSolver
     time_collection::TTime
     stopping_criteria::StoppingCriterion
-    origin::RealType
+    assembly_time::RealType
 end
 
 stopping_criteria(method::M1) = method.stopping_criteria
 time_collection(method::M1) = method.time_collection
 linear_solve_params(method::M1) = method.linear_solve_params
+
+assembly_time(method::M1) = method.assembly_time
 
 function M1(PDE::SPDE, conf::SolverConfig,
             grid::Grid;
@@ -26,6 +28,8 @@ function M1(PDE::SPDE, conf::SolverConfig,
     elseif has_trapping_potential(PDE)
         throw(ArgumentError("The M1 method does not support trapping potentials"))
     end
+
+    start_time = time()
 
     backend = backend_type(conf)
     FloatType = BackendReal(backend)
@@ -124,8 +128,10 @@ function M1(PDE::SPDE, conf::SolverConfig,
 
     startup_stats!(Stats, power_startup, energy_startup)
 
+    assembly_time = time() - start_time
+
     Meth = M1(grid, KernelDict, linear_solver_params, time_substeps, stopping_criteria,
-              zero(FloatType))
+              FloatType(assembly_time))
     #Return must be Method, Memory, Stats
     Meth, Memory, Stats
 end

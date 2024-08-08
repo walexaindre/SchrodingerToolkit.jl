@@ -20,7 +20,8 @@ makedocs(;
                                  "Examples without Josephson junction and trapping potential" => ["2D" => "./Examples/NoTrappingPotentialNoJunction/2D.md"]
                                  "Examples without trapping potential" => ["2D" => "./Examples/NoTrappingPotential/2D.md"]],
                   "Plotting recipes" => ["Prelude" => "./Plot/howto.md"],
-                  "Extending the package" => ["Prelude" => "./Extensions/prelude.md"],
+                  "Extending the package" => ["Prelude" => "./Extensions/prelude.md",
+                                              "Adding a new finite difference scheme" => "./Extensions/fdschemes.md"],
                   "API" => ["Index" => "./API/index.md",
                             "Types" => "./API/API.md"],
                   "Theory" => ["Problem" => "./Theory/Problem.md",

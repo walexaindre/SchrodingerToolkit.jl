@@ -8,12 +8,13 @@ struct M2{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
     linear_solve_params::ItSolver
     time_collection::TTime
     stopping_criteria::StoppingCriterion
-    origin::RealType
+    assembly_time::RealType
 end
 
 stopping_criteria(method::M2) = method.stopping_criteria
 time_collection(method::M2) = method.time_collection
 linear_solve_params(method::M2) = method.linear_solve_params
+assembly_time(method::M2) = method.assembly_time
 
 function opLn(PDE, grid, opA, opD, σ)
     points = collect_points(grid)
@@ -30,6 +31,8 @@ function M2(PDE::SPDE, conf::SolverConfig,
     FloatType = BackendReal(backend)
     ComplexType = Complex{FloatType}
     IntType = BackendInt(backend)
+
+    start_time = time()
 
     FloatCPUVector = Vector{FloatType}
     IntCPUVector = Vector{IntType}
@@ -122,8 +125,10 @@ function M2(PDE::SPDE, conf::SolverConfig,
 
     startup_stats!(Stats, power_startup, energy_startup)
 
+    assembly_time = time() - start_time
+
     Meth = M2(grid, KernelDict, linear_solver_params, time_substeps, stopping_criteria,
-              zero(FloatType))
+              FloatType(assembly_time))
     #Return must be Method, Memory, Stats
     Meth, Memory, Stats
 end
