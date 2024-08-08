@@ -28,15 +28,16 @@ function validate_constraints(a::T, b::T, c::T, α::T, β::T,
     end
 end
 
-@inline function validate_constraints(SpaceDiscretization::SecondDerivativeCoefficients{V,T}) where {V<:Integer,
-                                                                                             T<:AbstractFloatOrRational{V}}
+@inline function validate_constraints(SpaceDiscretization::SecondDerivativeCoefficients{V,
+                                                                                        T}) where {V<:Integer,
+                                                                                                   T<:AbstractFloatOrRational{V}}
     return validate_constraints(SpaceDiscretization.a, SpaceDiscretization.b,
                                 SpaceDiscretization.c, SpaceDiscretization.α,
                                 SpaceDiscretization.β, SpaceDiscretization.order)
 end
 
 @inline function validate_positive_definite(α::T,
-                                    β::T) where {T<:AbstractFloatOrRational{Int}}
+                                            β::T) where {T<:AbstractFloatOrRational{Int}}
 
     #By Gershgorin's theorem the generated matrix A is PSD
     #If |λ-1|≤ 2 ( α + β ) => -2 ( α + β ) ≤ λ - 1 ≤ 2 ( α + β ) => 1 - 2 ( α + β ) ≤ λ ≤ 1 + 2 ( α + β )
@@ -47,27 +48,65 @@ end
 end
 
 @inline function validate_positive_definite(SpaceDiscretization::SecondDerivativeCoefficients{V,
-                                                                                      T}) where {V<:Integer,
-                                                                                                 T<:AbstractFloatOrRational{V}}
+                                                                                              T}) where {V<:Integer,
+                                                                                                         T<:AbstractFloatOrRational{V}}
     validate_positive_definite(SpaceDiscretization.α, SpaceDiscretization.β)
 end
 
 @inline function check_validity(SpaceDiscretization::SecondDerivativeCoefficients{V,T}) where {T<:AbstractFloat,
-                                                                                       V<:Integer}
+                                                                                               V<:Integer}
     validate_constraints(SpaceDiscretization)
     validate_positive_definite(SpaceDiscretization)
 end
 
 @inline function check_validity(a::T, b::T, c::T, α::T, β::T,
-                        order::V) where {V<:Integer,
-                                         T<:AbstractFloatOrRational{V}}
+                                order::V) where {V<:Integer,
+                                                 T<:AbstractFloatOrRational{V}}
     validate_constraints(a, b, c, α, β, order)
     validate_positive_definite(α, β)
 end
 
-@inline function SecondDerivativeFiniteDifferenceSchemeAssembly(a::T, b::T, c::T, α::T, β::T,
-                             order::V) where {V<:Integer,
-                                              T<:AbstractFloatOrRational{V}}
+"""
+    @inline SecondDerivativeFiniteDifferenceSchemeAssembly(a::T, b::T, c::T, α::T, β::T,
+                                                  order::V) where {V<:Integer,
+                                                                   T<:AbstractFloatOrRational{V}}
+
+Constructs a Second Derivative Finite Difference Scheme Assembly with the given coefficients. Here you define the coefficients for the 1D case.
+2D and 3D cases are constructed by Kronecker product/sum among 1D schemes for each dimension.
+
+## Things to remember for 1D case
+
+- ``A(δᵢ) = D(ψ(xᵢ))`` where ``D = aΔ₀+bΔ₁+cΔ₂``, ``δ`` is the classic second derivative operator and ``ψ(xᵢ)`` is the function to be approximated.
+
+## Constraints
+
+To provide a valid scheme, the following constraints must be satisfied:
+
+- ``a + 2 ^ {ord} * b + 3 ^{ord} * c = (ord + 1) * (ord + 2) * (α + 2 ^ {ord} * β)`` for ``ord = 0, 2,..., order - 2``
+- ``1 - 2 * (α + β) > 0`` (Positive Definite Matrix)
+
+Those constraints are checked at construction time.
+
+## Arguments
+- `a::T`: Coefficient a
+- `b::T`: Coefficient b
+- `c::T`: Coefficient c
+- `α::T`: Coefficient α
+- `β::T`: Coefficient β
+- `order::V`: Order of the scheme
+
+## Returns
+
+- `SecondDerivativeCoefficients{V,T}`: Second Derivative Finite Difference Scheme Assembly
+
+## Reference for compact finite difference schemes
+
+* [Compact finite difference schemes with spectral-like resolution](https://doi.org/10.1016/0021-9991(92)90324-R)
+"""
+@inline function SecondDerivativeFiniteDifferenceSchemeAssembly(a::T, b::T, c::T, α::T,
+                                                                β::T,
+                                                                order::V) where {V<:Integer,
+                                                                                 T<:AbstractFloatOrRational{V}}
     check_validity(a, b, c, α, β, order)
     return SecondDerivativeCoefficients{V,T}(a, b, c, α, β, order)
 end
