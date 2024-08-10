@@ -41,3 +41,49 @@ function M4Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
              copy(vecmem),
              opA, factored_opA, opD)
 end
+
+@inline function system_power(M::M4Memory, grid)
+    curr_state = current_state!(M)
+    measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
+end
+
+@inline function system_total_power(M::M4Memory, grid::AG) where {AG<:AbstractPDEGrid}
+    sum(system_power(M, grid))
+end
+
+@inline function system_total_power(M::M4Memory,
+                                    power_per_component::Power) where {Power<:AbstractVector}
+    sum(power_per_component)
+end
+
+function system_energy(M::M4Memory, PDE, grid)
+    factored_opA = M.factored_opA
+    D = M.opD
+
+    state_abs2 = M.current_state_abs2
+    stage1 = M.stage1
+    stage2 = M.stage2
+    components = current_state!(M)
+
+    @. state_abs2 = abs2(components)
+    F = get_field(PDE)
+
+    energy = zero(eltype(components))
+
+    σ_collection = get_σ(PDE)
+
+    for (idx, σ) in enumerate(σ_collection)
+        @views comp = components[:, idx]
+        stage1 .= D * comp
+
+        stage2 .= factored_opA \ stage1
+
+        energy -= σ * dot(comp, stage2)
+    end
+
+    stage1 .= F(state_abs2)
+    vecenergy = sum(stage1)
+    energy += vecenergy
+
+    real(energy) * measure(grid)
+end

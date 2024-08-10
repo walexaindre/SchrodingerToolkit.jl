@@ -15,7 +15,7 @@ Base.length(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} 
 @inline start_power(R::RuntimeStats) = map(x -> x[end], R.system_power)
 @inline start_total_power(R::RuntimeStats) = R.system_total_power[end]
 
-@inline component_update_steps(R::RuntimeStats) = R.component_update_steps
+@inline component_update_steps(R::RuntimeStats) = R.component_update_steps[1:length(R)]
 @inline component_update_calls(R::RuntimeStats) = R.component_update_call_count
 
 """
@@ -353,6 +353,10 @@ function calculate_diff_system_total_power(stats::Stats) where {Stats<:RuntimeSt
     abs.(system_total_power(stats)[1:length(stats)] .- startup_power)
 end
 
+step_time(stats::Stats) where {Stats<:RuntimeStats} = stats.step_time[1:length(stats)] 
+
+solver_time(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_time[1:length(stats)] 
+
 """
     update_stats!(stats, step_time, power_per_component, sys_energy)
 
@@ -429,7 +433,7 @@ This is to keep the stats structure consistent with the simulation.
 For that reason is important to call this function at the end of the simulation step.
 """
 function update_stats!(stats::Stats, memory::MemType, grid, PDE,
-                       work_timer) where {Stats<:RuntimeStats, MemType<:AbstractMemory}
+                       work_timer) where {Stats<:RuntimeStats,MemType<:AbstractMemory}
     if isregistering_stats(stats)
         if islog(stats)
             power_per_component = system_power(memory, grid)
@@ -548,4 +552,4 @@ export initialize_stats, update_stats!, update_power!, update_system_energy!,
        calculate_diff_system_power, start_power, start_energy, islocked,
        current_iteration, islog, update_component_update_steps!,
        update_system_total_power!, component_update_calls, component_update_steps,
-       calculate_diff_system_total_power
+       calculate_diff_system_total_power, solver_time, step_time

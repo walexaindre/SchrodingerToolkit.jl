@@ -1,6 +1,6 @@
 include("M4Memory.jl")
 
-struct M4{RealType,Grid,TKernel,ItSolver,TTime,StoppingCriterion} <:
+struct M4{RealType,Grid,TKernel,TTime,StoppingCriterion} <:
        AbstractSolverMethod{RealType}
     grid::Grid
     Kernel::TKernel
@@ -11,10 +11,14 @@ end
 
 time_collection(method::M4) = method.time_collection
 assembly_time(method::M4) = method.assembly_time
+stopping_criteria(method::M4) = method.stopping_criteria
 
 function M4(PDE::SPDE, conf::SolverConfig,
-            grid::Grid;stopping_criteria = NormBased(backend_type(conf))) where {Grid<:AbstractPDEGrid,
-                               SPDE<:SchrodingerPDE}
+            grid::Grid;
+            stopping_criteria = NormBased(backend_type(conf))) where {Grid<:AbstractPDEGrid,
+                                                                      SPDE<:SchrodingerPDE}
+    start_time = time()
+
     backend = backend_type(conf)
     FloatType = BackendReal(backend)
     ComplexType = Complex{FloatType}
@@ -54,12 +58,12 @@ function M4(PDE::SPDE, conf::SolverConfig,
 
     if iscpu(backend)
         Memory = M4Memory(ComplexCPUVector, ComplexCPUArray, PDE, conf, grid,
-                          opA, lu(opA), lu(opD))
+                          opA, lu(opA), opD)
 
         dictionary_values = Vector{Kernel{SparseArrays.UMFPACK.UmfpackLU{ComplexType,
-                                                                         Int32},
+                                                                         IntType},
                                           UniformScaling{Bool},
-                                          SparseMatrixCSC{ComplexType,Int32}}}(undef,
+                                          SparseMatrixCSC{ComplexType,IntType}}}(undef,
                                                                                0)
 
         sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
@@ -78,14 +82,14 @@ function M4(PDE::SPDE, conf::SolverConfig,
         end
 
     elseif isgpu(backend)
-        opA = CuSparseMatrixCSR(opA)
+        gpuopA = CuSparseMatrixCSR(opA)
         Memory = M4Memory(ComplexGPUVector, ComplexGPUArray, PDE, conf, grid,
-                          opA, lu(opA), lu(CuSparseMatrixCSR(opD)))
+                          gpuopA, lu(gpuopA), CuSparseMatrixCSR(opD))
 
         dictionary_values = Vector{Kernel{CudssSolver{ComplexType},
                                           UniformScaling{Bool},
-                                          CuSparseArrayCSR{ComplexType,Int32}}}(undef,
-                                                                                0)
+                                          CuSparseMatrixCSR{ComplexType,Int32}}}(undef,
+                                                                                 0)
         sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
 
         for (σ, βτ) in product(σset,
@@ -115,64 +119,17 @@ function M4(PDE::SPDE, conf::SolverConfig,
 
     assembly_time = time() - start_time
 
-    Meth = M4(grid, KernelDict, time_substeps,stopping_criteria,
+    Meth = M4(grid, KernelDict, time_substeps, stopping_criteria,
               FloatType(assembly_time))
     #Return must be Method, Memory, Stats
     Meth, Memory, Stats
-end
-
-@inline function system_power(M::M4Memory, grid)
-    curr_state = current_state!(M)
-    measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
-end
-
-@inline function system_total_power(M::M4Memory, grid::AG) where {AG<:AbstractPDEGrid}
-    sum(system_power(M, grid))
-end
-
-@inline function system_total_power(M::M4Memory,
-                                    power_per_component::Power) where {Power<:AbstractVector}
-    sum(power_per_component)
-end
-
-function system_energy(M::M4Memory, PDE, grid)
-    A = M.opA
-    factored_opA = M.factored_opA
-    D = M.opD
-
-    state_abs2 = M.current_state_abs2
-    stage1 = M.stage1
-    components = current_state!(M)
-    sol_mem = solver_memory!(M)
-    sol_params = energy_solver_params(M)
-
-    @. state_abs2 = abs2(components)
-    F = get_field(PDE)
-
-    energy = zero(eltype(components))
-
-    σ_collection = get_σ(PDE)
-
-    for (idx, σ) in enumerate(σ_collection)
-        @views comp = components[:, idx]
-        b = D * comp
-
-        M.stage2 = factored_opA / b
-
-        energy -= σ * dot(comp, M.stage2)
-    end
-
-    stage1 .= F(state_abs2)
-    vecenergy = sum(stage1)
-    energy += vecenergy
-
-    real(energy) * measure(grid)
 end
 
 @inline function update_component!(method::M4, memory, stats, PDE, τ, σ, component_index)
     current_state = current_state!(memory)
     grid_measure = sqrt(measure(method.grid))
     solved = false
+    step_count = 0
 
     ψ = view(current_state, :, component_index)
     zₗ = memory.component_temp
@@ -205,7 +162,7 @@ end
     #End of N optimized
 
     mul!(b0_temp, opC, ψ)
-    for _ in 1:get_max_iterations(stopping_criteria_m1)
+    for l in 1:get_max_iterations(stopping_criteria_m1)
         @. current_state_abs2 = abs2(current_state)
         @. temporary_abs2 = abs2(zₗ)
         @. stage1 = zₗ + ψ
@@ -213,10 +170,7 @@ end
         @. b_temp = stage1 * stage2
         mul!(stage1, opA, b_temp)
         @. b_temp = τ * stage1 + b0_temp
-        sol_stime = time()
-        stage1 .= opB \ b_temp 
-        sol_etime = time()-sol_stime
-
+        sol_etime = CUDA.@elapsed ldiv!(stage1, opB, b_temp)
         update_solver_info!(stats, sol_etime, 0)
 
         #NormBased
@@ -228,6 +182,7 @@ end
         solved = znorm <=
                  get_atol(stopping_criteria_m1) + get_rtol(stopping_criteria_m1) * znorm
         if solved
+            step_count = l
             break
         end
     end
@@ -236,7 +191,7 @@ end
     if !solved
         @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m1)) iterations..."
     end
-    nothing
+    step_count
 end
 
 function step!(method::M4, memory, stats, PDE, conf::SolverConfig)

@@ -113,4 +113,4 @@ function step! end
 """
 function update_component! end
 
-export SolverParameters, step!, update_component!
+export SolverParameters, step!, update_component!, ConfigRuntimeStatsOptions

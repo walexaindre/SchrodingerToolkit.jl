@@ -140,7 +140,7 @@ end
     current_state = current_state!(memory)
     grid_measure = sqrt(measure(method.grid))
     solved = false
-
+    steps = 0
     ψ = view(current_state, :, component_index)
     zₗ = memory.component_temp
     #dst src
@@ -174,7 +174,7 @@ end
     #End of N optimized
 
     mul!(b0_temp, opC, ψ)
-    for _ in 1:get_max_iterations(stopping_criteria_m1)
+    for l in 1:get_max_iterations(stopping_criteria_m1)
         @. current_state_abs2 = abs2(current_state)
         @. temporary_abs2 = abs2(zₗ)
         @. stage1 = zₗ + ψ
@@ -196,6 +196,7 @@ end
         solved = znorm <=
                  get_atol(stopping_criteria_m1) + get_rtol(stopping_criteria_m1) * znorm
         if solved
+            steps = l
             break
         end
     end
@@ -204,12 +205,12 @@ end
     if !solved
         @warn "Convergence not reached in $(get_max_iterations(stopping_criteria_m1)) iterations..."
     end
-    nothing
+    steps
 end
 
 function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
-    start_timer = time()
     grid = method.grid
+    t0 = time()
 
     σ_forward = get_σ(PDE)
     σ_backward = reverse(σ_forward)
@@ -228,7 +229,7 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
         end
     end
 
-    work_timer = time() - start_timer
+    work_timer = time() - t0
 
     update_stats!(stats, memory, grid, PDE,
                   work_timer)
