@@ -7,14 +7,14 @@
 @inline Base.size(A::T) where {T<:AbstractPDEGrid} = A.dims
 @inline Base.length(A::T) where {T<:AbstractPDEGrid} = prod(A.dims)
 
-@inline range_start_step_stop(start, step, stop) = start:step:stop
-@inline range_start_stop_step(start, stop, step) = start:step:stop
-@inline range_start_stop_step(start_stop, step) = start_stop[1]:step:start_stop[2]
+@inline range_start_step_stop(start, step, stop) = (start:step:stop)[1:end-1]
+@inline range_start_stop_step(start, stop, step) = (start:step:stop)[1:end-1]
+@inline range_start_stop_step(start_stop, step) = (start_stop[1]:step:start_stop[2])[1:end-1]
 @inline range_start_stop_length(start, stop, length) = range(start, stop;
-                                                             length = length)
+                                                             length = length)[1:end-1]
 @inline range_start_stop_length(start_stop, length) = range(start_stop[1],
                                                             start_stop[2];
-                                                            length = length)
+                                                            length = length)[1:end-1]
 @inline range_length(rank) = Base.step(rank)
 
 ################################################################################################

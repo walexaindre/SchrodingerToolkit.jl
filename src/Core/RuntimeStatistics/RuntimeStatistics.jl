@@ -434,7 +434,7 @@ function update_stats!(stats::Stats, memory::MemType, grid, PDE,
         if islog(stats)
             power_per_component = system_power(memory, grid)
             energy = system_energy(memory, PDE, grid)
-            if islog_system_total_power(conf)
+            if islog_system_total_power(stats)
                 total_power = system_total_power(memory, PDE, grid,
                                                  power_per_component)
                 update_stats!(stats, work_timer, power_per_component, energy, total_power)

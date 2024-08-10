@@ -72,9 +72,9 @@ function M1(PDE::SPDE, conf::SolverConfig,
         Memory = M1Memory(ComplexCPUVector, ComplexCPUArray, PDE, conf, grid,
                           opA, opD)
 
-        dictionary_values = Array{Kernel{SparseMatrixCSR{1,ComplexType,IntType},
+        dictionary_values = Vector{Kernel{SparseMatrixCSC{ComplexType,IntType},
                                          UniformScaling{Bool},
-                                         SparseMatrixCSR{1,ComplexType,IntType}},1}(undef,
+                                         SparseMatrixCSC{ComplexType,IntType}}}(undef,
                                                                                     0)
 
         sizehint!(dictionary_values, length(σset) * length(TimeMultipliers))
@@ -181,7 +181,7 @@ end
         stage2 .= N(current_state_abs2, temporary_abs2, component_index)
         @. b_temp = stage1 * stage2
         mul!(stage1, opA, b_temp)
-        @. b_temp = -τ * stage1 + b0_temp
+        @. b_temp = τ * stage1 + b0_temp
         gmres!(SolverMem, opB, b_temp; atol = get_atol(solver_params),
                rtol = get_rtol(solver_params),
                itmax = get_max_iterations(solver_params))
@@ -218,6 +218,7 @@ function step!(method::M1, memory, stats, PDE, conf::SolverConfig)
         #Forward
         for (component_index, σ) in enumerate(σ_forward)
             steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
+            update_component_update_steps!(stats, steps)
         end
         #Backward
 

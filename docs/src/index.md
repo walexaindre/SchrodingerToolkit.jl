@@ -8,7 +8,7 @@ This package is designed to solve and develop algorithms for solving certain cla
 
 Where: 
 
-* The expected domain of the problem is a bounded cartesian domain ``\Omega`` from ``\mathbb{R}^d`` with ``d=1,2,3``.
+* The expected domain of the problem is a bounded Cartesian domain ``\Omega`` from ``\mathbb{R}^d`` with ``d=1,2,3``.
 
 * The boundary conditions are periodic.
 
@@ -20,7 +20,7 @@ Where:
 
 * ``D:= diag(d_i)`` is a ``\mathbb{R}^{N\times N}`` diagonal matrix with positive dispersive coefficients.
 
-* ``\mathcal{V}:\mathbb{\Omega} \longrightarrow \mathbb{R}^{N}`` is an external trapping potential.
+* ``\mathcal{V}:\Omega \longrightarrow \mathbb{R}^{N}`` is an external trapping potential.
 
 * ``\odot`` denotes the Hadamard product.
 
