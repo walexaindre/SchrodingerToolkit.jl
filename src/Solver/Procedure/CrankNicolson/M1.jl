@@ -86,6 +86,7 @@ function M1(PDE::SPDE, conf::SolverConfig,
             opC = (4im * opA - βτ * σ * opD)
             dropzeros!(opC)
 
+
             Ker = Kernel(opB, I, opC)
 
             push!(dictionary_keys, (σ, βτ))
@@ -109,6 +110,7 @@ function M1(PDE::SPDE, conf::SolverConfig,
             dropzeros!(opB)
             opC = (4im * opA - βτ * σ * opD)
             dropzeros!(opC)
+            @show nnz(opB)
 
             Ker = Kernel(CuSparseMatrixCSR(opB), I,
                          CuSparseMatrixCSR(opC))

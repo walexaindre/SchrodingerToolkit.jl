@@ -142,15 +142,15 @@ end
 
 fig = Figure(size = (800, 600), fontsize = 40,dpi=300)
 
-Ax = Axis(fig[1,1],xlabel = "Time (ms)", ylabel = "Step time (ms)")
-Ax.xlabel = rich("t",subscript("n"),"(ms)")
+Ax = Axis(fig[1,1],xlabel = "Time", ylabel = "Delta time (ms)")
+Ax.xlabel = rich("t",subscript("n"))
 Ax.ygridvisible = false
 Ax.xgridvisible = false
 Ax.yminorgridvisible = false
 Ax.yticks = WilkinsonTicks(6,k_min=5)
 Ax.xticks = WilkinsonTicks(6,k_min=5)
-Ax.xlabelsize = 24
-Ax.xticklabelsize=24
+Ax.xlabelsize = 40
+Ax.xticklabelsize=40
 
 scatterlines!(Ax,0..3,1000*rmx,  color = RGBf(0.0039,0.239216,0.5333) , colormap = :viridis, inspectable = true, visible = true,marker=:hexagon,strokewidth=1,linewidth=2)
 fig
