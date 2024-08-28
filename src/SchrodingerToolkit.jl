@@ -10,7 +10,7 @@ using Printf
 using Dates
 using Unitful
 using StaticArrays
-
+using Statistics
 using LinearAlgebra
 using LinearOperators
 using GLMakie

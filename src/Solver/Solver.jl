@@ -86,7 +86,7 @@ config(problem::SchrodingerProblem) = problem.Config
                 Expectations about memory are: 
                     - The memory must be allocated by the method at initialization.
                     - The memory must be updated by the method.
-                    - You must provide a method called `current_state!(memory)` that allows the caller to a reference to the current state (time step).
+                    - You must provide a method called `current_state!(memory)` that allows the caller to get a reference to the current state (time step).
                     - You must provide a method called `current_state(memory)` that allows the caller to get a copy of the current state of (time step).
             - `stats`: The statistics of the method.
                     - If you want to log statistics and you perform some kind of component wise operation then:
