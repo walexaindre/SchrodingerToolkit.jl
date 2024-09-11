@@ -112,7 +112,7 @@ function M4(PDE::SPDE, conf::SolverConfig,
     cstate = current_state!(Memory)
     evaluate_ψ!(PDE, grid, cstate)
 
-    power_startup = system_power(Memory, grid)
+    power_startup = system_mass(Memory, grid)
     energy_startup = system_energy(Memory, PDE, grid)
 
     startup_stats!(Stats, power_startup, energy_startup)

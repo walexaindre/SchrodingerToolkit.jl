@@ -69,20 +69,20 @@ end
     josephson_energy
 end
 
-@inline function system_power(M::M5Memory, grid)
+@inline function system_mass(M::M5Memory, grid)
     curr_state = current_state!(M)
 
     measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
 end
 
-@inline function system_total_power(M::M5Memory, PDE::PDEq,
+@inline function system_total_mass(M::M5Memory, PDE::PDEq,
                                     grid) where {PDEq<:SchrodingerPDE}
     curr_state = current_state!(M)
     aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
     measure(grid) * sum(sum(abs2.(curr_state); dims = 1)) - imag(josephson_energy)
 end
 
-@inline function system_total_power(M::M5Memory, PDE::PDEq, grid,
+@inline function system_total_mass(M::M5Memory, PDE::PDEq, grid,
                                     power_per_component) where {PDEq<:SchrodingerPDE}
     aux_josephson_power(M, grid.τ, junction_coefficient(PDE))
     sum(power_per_component) - imag(josephson_energy)

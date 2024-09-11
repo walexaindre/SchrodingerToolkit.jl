@@ -42,16 +42,16 @@ function M4Memory(::Type{ComplexVectorType}, ::Type{ComplexArrayType}, PDE, conf
              opA, factored_opA, opD)
 end
 
-@inline function system_power(M::M4Memory, grid)
+@inline function system_mass(M::M4Memory, grid)
     curr_state = current_state!(M)
     measure(grid) * vec(sum(abs2.(curr_state); dims = 1))
 end
 
-@inline function system_total_power(M::M4Memory, grid::AG) where {AG<:AbstractPDEGrid}
-    sum(system_power(M, grid))
+@inline function system_total_mass(M::M4Memory, grid::AG) where {AG<:AbstractPDEGrid}
+    sum(system_mass(M, grid))
 end
 
-@inline function system_total_power(M::M4Memory,
+@inline function system_total_mass(M::M4Memory,
                                     power_per_component::Power) where {Power<:AbstractVector}
     sum(power_per_component)
 end

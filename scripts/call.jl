@@ -24,7 +24,7 @@ GLMakie.record(fig,"2Dgpu.gif",1:300;framerate=15) do t
     obs[] = reshape(abs2.(current_state!(Memory)[:,1]|>Array),(1600,1600))
     step!(Problem)
 end
-
+step!(Problem)
 for j in 1:400
     step!(Problem)
 end 

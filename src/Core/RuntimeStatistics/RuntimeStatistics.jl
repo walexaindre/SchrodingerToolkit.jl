@@ -1,19 +1,19 @@
 Base.length(R::RuntimeStats{IntType,FloatType}) where {IntType,FloatType} = R.store_index -
                                                                             1
-Base.size(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} = size(C.power)
-Base.length(C::ComponentPower{FloatType,ArrayType}) where {FloatType,ArrayType} = length(C.power)
+Base.size(C::ComponentMass{FloatType,ArrayType}) where {FloatType,ArrayType} = size(C.mass)
+Base.length(C::ComponentMass{FloatType,ArrayType}) where {FloatType,ArrayType} = length(C.mass)
 
 @inline current_iteration(R::RuntimeStats) = R.current_iteration
 
 @inline start_energy(R::RuntimeStats) = R.system_energy[end]
 @inline system_energy(R::RuntimeStats) = R.system_energy
 @inline system_energy(R::RuntimeStats, index) = R.system_energy[index]
-@inline system_power(R::RuntimeStats, component) = R.system_power[component]
-@inline system_power(R::RuntimeStats, component, index) = R.system_power[component][index]
-@inline system_total_power(R::RuntimeStats) = R.system_total_power
-@inline start_power(R::RuntimeStats, component) = R.system_power[component][end]
-@inline start_power(R::RuntimeStats) = map(x -> x[end], R.system_power)
-@inline start_total_power(R::RuntimeStats) = R.system_total_power[end]
+@inline system_mass(R::RuntimeStats, component) = R.system_mass[component]
+@inline system_mass(R::RuntimeStats, component, index) = R.system_mass[component][index]
+@inline system_total_mass(R::RuntimeStats) = R.system_total_mass
+@inline start_mass(R::RuntimeStats, component) = R.system_mass[component][end]
+@inline start_mass(R::RuntimeStats) = map(x -> x[end], R.system_mass)
+@inline start_total_mass(R::RuntimeStats) = R.system_total_mass[end]
 
 @inline component_update_steps(R::RuntimeStats) = R.component_update_steps[1:length(R)]
 @inline component_update_calls(R::RuntimeStats) = R.component_update_call_count
@@ -44,27 +44,27 @@ Any attempt to use or modify the `Stats` structure if it is locked will throw an
 """
 @inline islocked(R::RuntimeStats) = R.config[4]
 
-@inline islog_system_total_power(R::RuntimeStats) = R.config[2]
+@inline islog_system_total_mass(R::RuntimeStats) = R.config[2]
 @inline islog_solver_info(R::RuntimeStats) = R.config[1]
 @inline islog_component_update_steps(R::RuntimeStats) = R.config[3]
 
-@inline function Base.getindex(C::ComponentPower{FloatType,
+@inline function Base.getindex(C::ComponentMass{FloatType,
                                                  ArrayType},
                                index) where {FloatType,ArrayType}
-    C.power[index]
+    C.mass[index]
 end
 
-@inline function Base.setindex!(C::ComponentPower{FloatType,ArrayType},
+@inline function Base.setindex!(C::ComponentMass{FloatType,ArrayType},
                                 value::FloatType,
                                 index) where {FloatType,ArrayType}
-    C.power[index] = value
+    C.mass[index] = value
 end
 
 """
     initialize_stats(FloatVectorType, IntVectorType, ncomponents, log_freq, time_steps;
                      log_stats = true, log_solver_info = true,
                      log_component_update_steps = false,
-                     log_system_total_power = false, islocked = false)
+                     log_system_total_mass = false, islocked = false)
 
 Initialize the stats structure.
 
@@ -81,7 +81,7 @@ Initialize the stats structure.
 - `log_stats`: Log the stats.
 - `log_solver_info`: Log the solver information.
 - `log_component_update_steps`: Log the component update steps.
-- `log_system_total_power`: Log the system total power.
+- `log_system_total_mass`: Log the system total mass.
 - `islocked`: Lock the stats.
 
 ## Returns
@@ -94,27 +94,27 @@ function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},
                           time_steps::IntType; log_stats::Bool = true,
                           log_solver_info::Bool = true,
                           log_component_update_steps::Bool = false,
-                          log_system_total_power::Bool = false,
+                          log_system_total_mass::Bool = false,
                           islocked::Bool = false) where {IntType,
                                                          IntVectorType,
                                                          FloatVectorType}
-    config = (log_solver_info, log_system_total_power, log_component_update_steps,
+    config = (log_solver_info, log_system_total_mass, log_component_update_steps,
               islocked, log_stats, false, false, false)
 
     seq_size = div(time_steps, log_freq) + 1
     seq_solver = log_solver_info ? seq_size : 0
-    seq_total_power = log_system_total_power ? seq_size : 0
+    seq_total_mass = log_system_total_mass ? seq_size : 0
     seq_component_update_steps = log_component_update_steps ? seq_size : 0
 
     sys_energy = vundef(FloatVectorType, seq_size)
-    sys_power = ntuple(Returns(ComponentPower(similar(sys_energy))), ncomponents)
-    sys_total_power = vundef(FloatVectorType, seq_total_power)
+    sys_mass = ntuple(Returns(ComponentMass(similar(sys_energy))), ncomponents)
+    sys_total_mass = vundef(FloatVectorType, seq_total_mass)
     sys_time = vundef(FloatVectorType, seq_size)
     solver_time = vzeros(FloatVectorType, seq_solver)
     solver_iterations = vzeros(IntVectorType, seq_solver)
     component_update_steps = vzeros(IntVectorType, seq_component_update_steps)
 
-    RuntimeStats(sys_energy, sys_power, sys_total_power, sys_time, solver_time,
+    RuntimeStats(sys_energy, sys_mass, sys_total_mass, sys_time, solver_time,
                  solver_iterations, component_update_steps,
                  log_freq, config, false, zero(IntType), zero(IntType), one(IntType))
 end
@@ -126,7 +126,7 @@ function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType}, PDE::S
                                               PGrid<:PeriodicGrid}
     log_freq = stats_logfreq(conf)
     log_component_update_steps = stats_log_component_update_steps(conf)
-    log_system_total_power = stats_log_system_total_power(conf)
+    log_system_total_mass = stats_log_system_total_mass(conf)
     log_solver_info = stats_log_solver_info(conf)
     islocked = stats_locked(conf)
     log_stats = stats_log_stats(conf)
@@ -137,34 +137,34 @@ function initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType}, PDE::S
                      log_stats = log_stats,
                      log_solver_info = log_solver_info,
                      log_component_update_steps = log_component_update_steps,
-                     log_system_total_power = log_system_total_power,
+                     log_system_total_mass = log_system_total_mass,
                      islocked = islocked)
 end
 
 """
-    startup_stats!(stats::Stats, start_power, start_energy)
+    startup_stats!(stats::Stats, start_mass, start_energy)
 
-Initialize the stats structure with the power and energy at time step `0`.
+Initialize the stats structure with the mass and energy at time step `0`.
 """
-function startup_stats!(stats::Stats, start_power,
+function startup_stats!(stats::Stats, start_mass,
                         start_energy) where {Stats<:RuntimeStats}
     last_index = lastindex(stats.step_time)
-    update_power!(stats, start_power, last_index)
+    update_mass!(stats, start_mass, last_index)
     update_system_energy!(stats, start_energy, last_index)
     advance_iteration!(stats)
 end
 
 """
-    startup_stats!(stats::Stats, start_power, start_energy, total_power)
+    startup_stats!(stats::Stats, start_mass, start_energy, total_mass)
 
-Initialize the stats structure with the power, energy and total power at time step `0`.
+Initialize the stats structure with the mass, energy and total mass at time step `0`.
 """
-function startup_stats!(stats::Stats, start_power, start_energy,
-                        total_power) where {Stats<:RuntimeStats}
+function startup_stats!(stats::Stats, start_mass, start_energy,
+                        total_mass) where {Stats<:RuntimeStats}
     last_index = lastindex(stats.step_time)
-    update_power!(stats, start_power, last_index)
+    update_mass!(stats, start_mass, last_index)
     update_system_energy!(stats, start_energy, last_index)
-    update_system_total_power!(stats, total_power, last_index)
+    update_system_total_mass!(stats, total_mass, last_index)
     advance_iteration!(stats)
 end
 
@@ -188,24 +188,24 @@ Advance the iteration in the stats structure.
     return false
 end
 """
-    update_power!(stats, power, idx)
+    update_mass!(stats, mass, idx)
 
-Update the power per component in the stats structure.
+Update the mass per component in the stats structure.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
-- `power::Vector{FloatType}`: The power per component.
+- `mass::Vector{FloatType}`: The mass per component.
 - `idx::IntType`: The index to update.
 """
-function update_power!(stats::Stats, power,
+function update_mass!(stats::Stats, mass,
                        idx::IntType) where {IntType<:Integer,
                                             FloatType<:AbstractFloat,
                                             Stats<:RuntimeStats{IntType,FloatType}}
-    power = Vector(power)
+    mass = Vector(mass)
 
     if !islocked(stats) && isregistering_stats(stats)
-        for comp in 1:length(stats.system_power)
-            stats.system_power[comp][idx] = power[comp]
+        for comp in 1:length(stats.system_mass)
+            stats.system_mass[comp][idx] = mass[comp]
         end
         return true
     elseif islocked(stats)
@@ -239,22 +239,22 @@ function update_system_energy!(stats::Stats, energy::FloatType,
 end
 
 """
-    update_system_total_power!(stats, total_power, idx)
+    update_system_total_mass!(stats, total_mass, idx)
 
-Update the system total power in the stats structure.
+Update the system total mass in the stats structure.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
-- `total_power::FloatType`: The total power.
+- `total_mass::FloatType`: The total mass.
 - `idx::IntType`: The index to update.
 """
-function update_system_total_power!(stats::Stats, total_power::FloatType,
+function update_system_total_mass!(stats::Stats, total_mass::FloatType,
                                     idx::IntType) where {IntType<:Integer,
                                                          FloatType<:AbstractFloat,
                                                          Stats<:RuntimeStats{IntType,
                                                                              FloatType}}
-    if !islocked(stats) && islog_system_total_power(stats) && isregistering_stats(stats)
-        stats.system_total_power[idx] = total_power
+    if !islocked(stats) && islog_system_total_mass(stats) && isregistering_stats(stats)
+        stats.system_total_mass[idx] = total_mass
         return true
     elseif islocked(stats)
         error("Stats are locked")
@@ -325,56 +325,86 @@ function calculate_diff_system_energy(stats::Stats) where {Stats<:RuntimeStats}
 end
 
 """
-    calculate_diff_system_power(stats)
+    calculate_diff_system_mass(stats)
 
-Calculate the absolute value of the difference between the system power and the power at time step `0`.
+Calculate the absolute value of the difference between the system mass and the mass at time step `0`.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
 """
-function calculate_diff_system_power(stats::Stats,
+function calculate_diff_system_mass(stats::Stats,
                                      index) where {Stats<:RuntimeStats}
-    startup_power = start_power(stats, index)
+    startup_mass = start_mass(stats, index)
 
-    return abs.(system_power(stats, index)[1:length(stats)] .- startup_power)
+    return abs.(system_mass(stats, index)[1:length(stats)] .- startup_mass)
 end
 
 """
-    calculate_diff_system_total_power(stats)
+    calculate_diff_system_total_mass(stats)
 
-Calculate the absolute value of the difference between the system total power and the total power at time step `0`.
+Calculate the absolute value of the difference between the system total mass and the total mass at time step `0`.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
 """
-function calculate_diff_system_total_power(stats::Stats) where {Stats<:RuntimeStats}
-    startup_power = start_total_power(stats)
+function calculate_diff_system_total_mass(stats::Stats) where {Stats<:RuntimeStats}
+    startup_mass = start_total_mass(stats)
 
-    abs.(system_total_power(stats)[1:length(stats)] .- startup_power)
+    abs.(system_total_mass(stats)[1:length(stats)] .- startup_mass)
 end
 
-step_time(stats::Stats) where {Stats<:RuntimeStats} = stats.step_time[1:length(stats)] 
+"""
+    step_time(stats)
 
-solver_time(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_time[1:length(stats)] 
+Get the time spent in the current step.
+
+## Arguments
+- `stats::Stats`: The stats structure.
+"""
+step_time(stats::Stats) where {Stats<:RuntimeStats} = stats.step_time[1:length(stats)]
 
 """
-    update_stats!(stats, step_time, power_per_component, sys_energy)
+    solver_time(stats)
 
-Update the stats structure with the current time, power per component and system energy.
+Get the time spent in the solver.
+
+## Arguments
+- `stats::Stats`: The stats structure.
+"""
+solver_time(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_time[1:length(stats)]
+
+"""
+    calculate_diff_step_and_solver_time(stats)
+
+Calculate the absolute value of the difference between the time spent in the current step and the time spent in the solver.
+
+## Arguments
+- `stats::Stats`: The stats structure.
+"""
+function calculate_diff_step_and_solver_time(stats::Stats) where {Stats<:RuntimeStats}
+    step_time = step_time(stats)
+    solver_time = solver_time(stats)
+    return abs.(step_time .- solver_time)
+end
+
+"""
+    update_stats!(stats, step_time, mass_per_component, sys_energy)
+
+Update the stats structure with the current time, mass per component and system energy.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
 - `step_time::FloatType`: Amount of time spent in the current step.
-- `power_per_component`: The power per component.
+- `mass_per_component`: The mass per component.
 - `sys_energy::FloatType`: The system energy.
 """
-function update_stats!(stats::Stats, step_time, power_per_component,
+function update_stats!(stats::Stats, step_time, mass_per_component,
                        sys_energy) where {Stats<:RuntimeStats}
     if !islocked(stats) && isregistering_stats(stats)
         if islog(stats)
             idx = stats.store_index
             stats.step_time[idx] = step_time
-            update_power!(stats, power_per_component, idx)
+            update_mass!(stats, mass_per_component, idx)
             update_system_energy!(stats, sys_energy, idx)
             stats.store_index += 1
             stats.log_data = false
@@ -386,26 +416,26 @@ function update_stats!(stats::Stats, step_time, power_per_component,
 end
 
 """
-    update_stats!(stats, step_time, power_per_component, sys_energy, total_power)
+    update_stats!(stats, step_time, mass_per_component, sys_energy, total_mass)
 
-Update the stats structure with the current time, power per component, system energy and total power.
+Update the stats structure with the current time, mass per component, system energy and total mass.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
 - `step_time::FloatType`: Amount of time spent in the current step.
-- `power_per_component`: The power per component.
+- `mass_per_component`: The mass per component.
 - `sys_energy::FloatType`: The system energy.
-- `total_power::FloatType`: The total power.
+- `total_mass::FloatType`: The total mass.
 """
-function update_stats!(stats::Stats, step_time, power_per_component, sys_energy,
-                       total_power) where {Stats<:RuntimeStats}
+function update_stats!(stats::Stats, step_time, mass_per_component, sys_energy,
+                       total_mass) where {Stats<:RuntimeStats}
     if !islocked(stats) && isregistering_stats(stats)
         if islog(stats)
             idx = stats.store_index
             stats.step_time[idx] = step_time
-            update_power!(stats, power_per_component, idx)
+            update_mass!(stats, mass_per_component, idx)
             update_system_energy!(stats, sys_energy, idx)
-            update_system_total_power!(stats, total_power, idx)
+            update_system_total_mass!(stats, total_mass, idx)
             stats.store_index += 1
             stats.log_data = false
         end
@@ -418,7 +448,7 @@ end
 """
     update_stats!(stats, memory, grid, PDE, work_timer)
 
-Update the stats structure with the current time, power per component, system energy and total power.
+Update the stats structure with the current time, mass per component, system energy and total mass.
 
 ## Arguments
 - `stats::Stats`: The stats structure.
@@ -436,14 +466,14 @@ function update_stats!(stats::Stats, memory::MemType, grid, PDE,
                        work_timer) where {Stats<:RuntimeStats,MemType<:AbstractMemory}
     if isregistering_stats(stats)
         if islog(stats)
-            power_per_component = system_power(memory, grid)
+            mass_per_component = system_mass(memory, grid)
             energy = system_energy(memory, PDE, grid)
-            if islog_system_total_power(stats)
-                total_power = system_total_power(memory, PDE, grid,
-                                                 power_per_component)
-                update_stats!(stats, work_timer, power_per_component, energy, total_power)
+            if islog_system_total_mass(stats)
+                total_mass = system_total_mass(memory, PDE, grid,
+                                                 mass_per_component)
+                update_stats!(stats, work_timer, mass_per_component, energy, total_mass)
             end
-            update_stats!(stats, work_timer, power_per_component, energy)
+            update_stats!(stats, work_timer, mass_per_component, energy)
         else
             advance_iteration!(stats)
         end
@@ -528,7 +558,7 @@ function deserialize(::Type{RuntimeStats}, path::String)
 
     system_energy = deserialize(FloatVectorType, fromjson["system_energy"])
 
-    system_power = Tuple(map(x -> ComponentPower(deserialize(FloatVectorType, x)),
+    system_power = Tuple(map(x -> ComponentMass(deserialize(FloatVectorType, x)),
                              fromjson["system_power"]))
 
     step_time = deserialize(FloatVectorType, fromjson["step_time"])
@@ -547,9 +577,9 @@ function deserialize(::Type{RuntimeStats}, path::String)
                  store_index)
 end
 
-export initialize_stats, update_stats!, update_power!, update_system_energy!,
-       system_power, system_energy, deserialize, serialize, calculate_diff_system_energy,
-       calculate_diff_system_power, start_power, start_energy, islocked,
+export initialize_stats, update_stats!, update_mass!, update_system_energy!,
+       system_mass, system_energy, deserialize, serialize, calculate_diff_system_energy,
+       calculate_diff_system_mass, start_mass, start_energy, islocked,
        current_iteration, islog, update_component_update_steps!,
-       update_system_total_power!, component_update_calls, component_update_steps,
-       calculate_diff_system_total_power, solver_time, step_time
+       update_system_total_mass!, component_update_calls, component_update_steps,
+       calculate_diff_system_total_mass, solver_time, step_time

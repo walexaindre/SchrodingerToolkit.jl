@@ -48,19 +48,19 @@ This is because the `Stats` type is used to store incoming data from the simulat
 """
 abstract type AbstractRuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType} end
 
-struct ComponentPower{FloatType,ArrayType<:AbstractArray{FloatType}} <:
+struct ComponentMass{FloatType,ArrayType<:AbstractArray{FloatType}} <:
        AbstractVector{FloatType}
-    power::ArrayType
+    mass::ArrayType
 end
 
 mutable struct RuntimeStats{IntType,FloatType,IntVectorType,
                             FloatVectorType<:AbstractArray{FloatType},
-                            Power<:Tuple{Vararg{ComponentPower{FloatType,FloatVectorType}}}} <:
+                            Power<:Tuple{Vararg{ComponentMass{FloatType,FloatVectorType}}}} <:
                AbstractRuntimeStats{IntType,FloatType,IntVectorType,FloatVectorType}
     const system_energy::FloatVectorType
-    const system_power::Power
+    const system_mass::Power
 
-    const system_total_power::FloatVectorType
+    const system_total_mass::FloatVectorType
 
     const step_time::FloatVectorType
 
