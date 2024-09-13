@@ -6,15 +6,19 @@ Base.length(C::ComponentMass{FloatType,ArrayType}) where {FloatType,ArrayType} =
 @inline current_iteration(R::RuntimeStats) = R.current_iteration
 
 @inline start_energy(R::RuntimeStats) = R.system_energy[end]
-@inline system_energy(R::RuntimeStats) = R.system_energy
+@inline system_energy!(R::RuntimeStats) = R.system_energy
+@inline system_energy(R::RuntimeStats) = R.system_energy[1:length(R)]
 @inline system_energy(R::RuntimeStats, index) = R.system_energy[index]
-@inline system_mass(R::RuntimeStats, component) = R.system_mass[component]
+@inline system_mass!(R::RuntimeStats, component) = R.system_mass[component]
+@inline system_mass(R::RuntimeStats, component) = R.system_mass[component][1:length(R)]
 @inline system_mass(R::RuntimeStats, component, index) = R.system_mass[component][index]
-@inline system_total_mass(R::RuntimeStats) = R.system_total_mass
+@inline system_total_mass!(R::RuntimeStats) = R.system_total_mass
+@inline system_total_mass(R::RuntimeStats) = R.system_total_mass[1:length(R)]
 @inline start_mass(R::RuntimeStats, component) = R.system_mass[component][end]
 @inline start_mass(R::RuntimeStats) = map(x -> x[end], R.system_mass)
 @inline start_total_mass(R::RuntimeStats) = R.system_total_mass[end]
 
+@inline component_update_steps!(R::RuntimeStats) = R.component_update_steps
 @inline component_update_steps(R::RuntimeStats) = R.component_update_steps[1:length(R)]
 @inline component_update_calls(R::RuntimeStats) = R.component_update_call_count
 
@@ -49,7 +53,7 @@ Any attempt to use or modify the `Stats` structure if it is locked will throw an
 @inline islog_component_update_steps(R::RuntimeStats) = R.config[3]
 
 @inline function Base.getindex(C::ComponentMass{FloatType,
-                                                 ArrayType},
+                                                ArrayType},
                                index) where {FloatType,ArrayType}
     C.mass[index]
 end
@@ -198,9 +202,9 @@ Update the mass per component in the stats structure.
 - `idx::IntType`: The index to update.
 """
 function update_mass!(stats::Stats, mass,
-                       idx::IntType) where {IntType<:Integer,
-                                            FloatType<:AbstractFloat,
-                                            Stats<:RuntimeStats{IntType,FloatType}}
+                      idx::IntType) where {IntType<:Integer,
+                                           FloatType<:AbstractFloat,
+                                           Stats<:RuntimeStats{IntType,FloatType}}
     mass = Vector(mass)
 
     if !islocked(stats) && isregistering_stats(stats)
@@ -249,10 +253,10 @@ Update the system total mass in the stats structure.
 - `idx::IntType`: The index to update.
 """
 function update_system_total_mass!(stats::Stats, total_mass::FloatType,
-                                    idx::IntType) where {IntType<:Integer,
-                                                         FloatType<:AbstractFloat,
-                                                         Stats<:RuntimeStats{IntType,
-                                                                             FloatType}}
+                                   idx::IntType) where {IntType<:Integer,
+                                                        FloatType<:AbstractFloat,
+                                                        Stats<:RuntimeStats{IntType,
+                                                                            FloatType}}
     if !islocked(stats) && islog_system_total_mass(stats) && isregistering_stats(stats)
         stats.system_total_mass[idx] = total_mass
         return true
@@ -321,7 +325,7 @@ Calculate the absolute value of the difference between the system energy and the
 function calculate_diff_system_energy(stats::Stats) where {Stats<:RuntimeStats}
     startup_energy = start_energy(stats)
 
-    abs.(system_energy(stats)[1:length(stats)] .- startup_energy)
+    abs.(system_energy(stats) .- startup_energy)
 end
 
 """
@@ -333,10 +337,10 @@ Calculate the absolute value of the difference between the system mass and the m
 - `stats::Stats`: The stats structure.
 """
 function calculate_diff_system_mass(stats::Stats,
-                                     index) where {Stats<:RuntimeStats}
+                                    index) where {Stats<:RuntimeStats}
     startup_mass = start_mass(stats, index)
 
-    return abs.(system_mass(stats, index)[1:length(stats)] .- startup_mass)
+    return abs.(system_mass(stats, index) .- startup_mass)
 end
 
 """
@@ -350,7 +354,7 @@ Calculate the absolute value of the difference between the system total mass and
 function calculate_diff_system_total_mass(stats::Stats) where {Stats<:RuntimeStats}
     startup_mass = start_total_mass(stats)
 
-    abs.(system_total_mass(stats)[1:length(stats)] .- startup_mass)
+    abs.(system_total_mass(stats) .- startup_mass)
 end
 
 """
@@ -362,6 +366,7 @@ Get the time spent in the current step.
 - `stats::Stats`: The stats structure.
 """
 step_time(stats::Stats) where {Stats<:RuntimeStats} = stats.step_time[1:length(stats)]
+step_time!(stats::Stats) where {Stats<:RuntimeStats} = stats.step_time
 
 """
     solver_time(stats)
@@ -372,6 +377,16 @@ Get the time spent in the solver.
 - `stats::Stats`: The stats structure.
 """
 solver_time(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_time[1:length(stats)]
+solver_time!(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_time
+"""
+    solver_iteations(stats)
+
+Get the number of iterations performed in the solver.
+
+## Arguments
+- `stats::Stats`: The stats structure.
+"""
+solver_iteations(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_iterations[1:length(stats)]
 
 """
     calculate_diff_step_and_solver_time(stats)
@@ -470,7 +485,7 @@ function update_stats!(stats::Stats, memory::MemType, grid, PDE,
             energy = system_energy(memory, PDE, grid)
             if islog_system_total_mass(stats)
                 total_mass = system_total_mass(memory, PDE, grid,
-                                                 mass_per_component)
+                                               mass_per_component)
                 update_stats!(stats, work_timer, mass_per_component, energy, total_mass)
             end
             update_stats!(stats, work_timer, mass_per_component, energy)
@@ -582,4 +597,4 @@ export initialize_stats, update_stats!, update_mass!, update_system_energy!,
        calculate_diff_system_mass, start_mass, start_energy, islocked,
        current_iteration, islog, update_component_update_steps!,
        update_system_total_mass!, component_update_calls, component_update_steps,
-       calculate_diff_system_total_mass, solver_time, step_time
+       calculate_diff_system_total_mass, solver_time, step_time, solver_iteations

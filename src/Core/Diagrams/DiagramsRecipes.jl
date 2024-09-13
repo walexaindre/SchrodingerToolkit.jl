@@ -69,7 +69,7 @@ function plot_solver_time(Stats, Grid; kwargs...)
                     ylabel = "Solver time (ms)", kwargs...)
 end
 
-function plot_preprocessing_time(Stats,Grid; kwargs...)
+function plot_preprocessing_time(Stats, Grid; kwargs...)
     diffv = calculate_diff_step_and_solver_time(Stats)
     avg = mean(diffv) * 1000.0
 
@@ -84,7 +84,88 @@ function plot_preprocessing_time(Stats,Grid; kwargs...)
                     ylabel = "Preprocessing time (ms)", kwargs...)
 end
 
-function plot_mass_per_component(Stats, index)
+function plot_absolute_error_mass_per_component(Stats, Grid, index; kwargs...)
+    sys_mass_diff = calculate_diff_system_mass(Stats, index)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Absolute Error", kwargs...)
 end
 
-export plot_systemnd, plot_execution_time, plot_mass_per_component, plot_solver_time
+function plot_mass_per_component(Stats, Grid, index; kwargs...)
+    sys_mass_diff = system_mass(Stats, index)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Mass at component $idx", kwargs...)
+end
+
+function plot_absolute_error_total_mass(Stats, Grid)
+    sys_mass_diff = calculate_diff_system_total_mass(Stats)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Absolute error")
+end
+
+function plot_total_mass(Stats, Grid)
+    sys_mass_diff = system_total_mass(Stats)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Total mass")
+end
+
+function plot_solver_iterations(Stats, Grid; kwargs...)
+    iter = solver_iterations(Stats)
+    avg = mean(iter)
+
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_base_2d(time_range, iter, avg; xlabel = rich("t", subscript("n")),
+                    ylabel = "Solver iterations", kwargs...)
+end
+
+function plot_absolute_error_system_energy(Stats, Grid; kwargs...)
+    sys_energy = system_energy(Stats)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+
+    diagram_ylog_2d(time_range, sys_energy; xlabel = rich("t", subscript("n")),
+                    ylabel = "System Energy", kwargs...)
+    
+end
+
+
+export plot_systemnd, plot_execution_time, plot_mass_per_component, plot_solver_time,
+       plot_preprocessing_time, plot_absolute_error_mass_per_component,
+       plot_absolute_error_total_mass, plot_total_mass
