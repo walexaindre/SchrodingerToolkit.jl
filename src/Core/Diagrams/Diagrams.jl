@@ -32,7 +32,7 @@ function diagram_hide_env(axis)
     hidedecorations!(axis)
 end
 
-function diagram_axis_conf(axis; labelsize = 24, ticklabelsize = 18)
+function diagram_axis_conf(axis; labelsize = 42, ticklabelsize = 36)
     is3d = hasproperty(axis, :zticks)
 
     ndims = is3d ? 3 : 2
@@ -88,12 +88,13 @@ function diagram_base_2d(xval, yval, avg; xlabel = "x - label", ylabel = "y - la
     scatterlines!(axis, xval, yval; color = color, linewidth = linewidth,
                   linestyle = linestyle, colormap = colormap, kwargs...)
 
-    ablines!(axis, avg, 0; linestyle = linestyle, linewidth = linewidth, kwargs...)
+    ablines!(axis, avg, 0; color = :red,linestyle = linestyle, linewidth = linewidth, kwargs...)
 
     fig, axis
 end
 
-function diagram_ylog_2d(xval,yval; xlabel="x - label", ylabel= "y - label", kwargs...)
+
+function diagram_2d(xval,yval; xlabel= "x - label",ylabel= "y - label",xscale = identity, yscale = identity, kwargs...)
     linewidth = haskey(kwargs, :linewidth) ? kwargs[:linewidth] : 2.5
     linestyle = haskey(kwargs, :linestyle) ? kwargs[:linestyle] : :dash
     color = haskey(kwargs, :color) ? kwargs[:color] : RGBf(0.0039, 0.239216, 0.5333)
@@ -101,7 +102,9 @@ function diagram_ylog_2d(xval,yval; xlabel="x - label", ylabel= "y - label", kwa
 
     fig = diagram_startup()
     axis = Axis(fig[1, 1])
-    axis.yscale = log10
+    axis.xscale = xscale
+    axis.yscale = yscale
+
     diagram_axis_conf(axis)
     diagram_label_conf(axis; xlabel = xlabel, ylabel = ylabel)
     diagram_hide_conf(axis)
@@ -110,4 +113,5 @@ function diagram_ylog_2d(xval,yval; xlabel="x - label", ylabel= "y - label", kwa
                   linestyle = linestyle, colormap = colormap, kwargs...)              
 
     fig,axis
+    
 end

@@ -30,7 +30,7 @@ function plot_systemnd(Memory, Grid, idx; kwargs...)
         z = reshape(points, size(Grid))
         surf_scene = surface!(axis, x, y, z; colormap = cgrad(colormap; rev = true),
                               kwargs...)
-        Colorbar(fig[1, 2], surf_scene; ticklabelsize = 18)
+        Colorbar(fig[1, 2], surf_scene; ticklabelsize = 36)
 
     else
         Error("3D plotting not supported yet.")
@@ -38,7 +38,7 @@ function plot_systemnd(Memory, Grid, idx; kwargs...)
     fig, axis
 end
 
-function plot_execution_time(Stats, Grid; kwargs...)
+function plot_execution_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
 
@@ -54,7 +54,7 @@ function plot_execution_time(Stats, Grid; kwargs...)
                     kwargs...)
 end
 
-function plot_solver_time(Stats, Grid; kwargs...)
+function plot_solver_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sol_time = solver_time(Stats) * 1000.0
     avg = mean(sol_time) * 1000.0
 
@@ -69,7 +69,7 @@ function plot_solver_time(Stats, Grid; kwargs...)
                     ylabel = "Solver time (ms)", kwargs...)
 end
 
-function plot_preprocessing_time(Stats, Grid; kwargs...)
+function plot_preprocessing_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     diffv = calculate_diff_step_and_solver_time(Stats)
     avg = mean(diffv) * 1000.0
 
@@ -84,7 +84,7 @@ function plot_preprocessing_time(Stats, Grid; kwargs...)
                     ylabel = "Preprocessing time (ms)", kwargs...)
 end
 
-function plot_absolute_error_mass_per_component(Stats, Grid, index; kwargs...)
+function plot_absolute_error_mass_per_component(Stats::RTStats, Grid, index; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = calculate_diff_system_mass(Stats, index)
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
@@ -93,11 +93,11 @@ function plot_absolute_error_mass_per_component(Stats, Grid, index; kwargs...)
 
     time_range = range(τ; step = τ, length = len)
 
-    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
-                    ylabel = "Absolute Error", kwargs...)
+    diagram_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Absolute Error",yscale=Makie.pseudolog10, kwargs...)
 end
 
-function plot_mass_per_component(Stats, Grid, index; kwargs...)
+function plot_mass_per_component(Stats::RTStats, Grid, index; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = system_mass(Stats, index)
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
@@ -106,11 +106,11 @@ function plot_mass_per_component(Stats, Grid, index; kwargs...)
 
     time_range = range(τ; step = τ, length = len)
 
-    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
-                    ylabel = "Mass at component $idx", kwargs...)
+    diagram_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Mass at component $index", kwargs...)
 end
 
-function plot_absolute_error_total_mass(Stats, Grid)
+function plot_absolute_error_total_mass(Stats::RTStats, Grid) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = calculate_diff_system_total_mass(Stats)
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
@@ -119,11 +119,11 @@ function plot_absolute_error_total_mass(Stats, Grid)
 
     time_range = range(τ; step = τ, length = len)
 
-    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
-                    ylabel = "Absolute error")
+    diagram_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+                    ylabel = "Absolute error",yscale = Makie.pseudolog10)
 end
 
-function plot_total_mass(Stats, Grid)
+function plot_total_mass(Stats::RTStats, Grid) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = system_total_mass(Stats)
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
@@ -132,11 +132,11 @@ function plot_total_mass(Stats, Grid)
 
     time_range = range(τ; step = τ, length = len)
 
-    diagram_ylog_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
+    diagram_2d(time_range, sys_mass_diff; xlabel = rich("t", subscript("n")),
                     ylabel = "Total mass")
 end
 
-function plot_solver_iterations(Stats, Grid; kwargs...)
+function plot_solver_iterations(Stats::RTStats , Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     iter = solver_iterations(Stats)
     avg = mean(iter)
 
@@ -151,8 +151,22 @@ function plot_solver_iterations(Stats, Grid; kwargs...)
                     ylabel = "Solver iterations", kwargs...)
 end
 
-function plot_absolute_error_system_energy(Stats, Grid; kwargs...)
-    sys_energy = system_energy(Stats)
+function plot_absolute_error_system_energy(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
+    sys_energy = calculate_diff_system_energy(Stats)
+    log_freq = Stats.log_frequency
+    τ = Grid.τ * log_freq
+
+    len = length(Stats)
+
+    time_range = range(τ; step = τ, length = len)
+    diagram_2d(time_range, sys_energy; xlabel = rich("t", subscript("n"),yscale = Makie.pseudolog10),
+                    ylabel = "System Energy", kwargs...)
+    
+end
+
+function plot_component_update_steps(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
+    steps = component_update_steps(Stats)
+    avg = mean(steps)
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
 
@@ -160,12 +174,11 @@ function plot_absolute_error_system_energy(Stats, Grid; kwargs...)
 
     time_range = range(τ; step = τ, length = len)
 
-    diagram_ylog_2d(time_range, sys_energy; xlabel = rich("t", subscript("n")),
-                    ylabel = "System Energy", kwargs...)
+    diagram_base_2d(time_range, steps, avg; xlabel = rich("t", subscript("n")),
+                    ylabel = "Component update steps", kwargs...)
     
 end
 
-
 export plot_systemnd, plot_execution_time, plot_mass_per_component, plot_solver_time,
        plot_preprocessing_time, plot_absolute_error_mass_per_component,
-       plot_absolute_error_total_mass, plot_total_mass
+       plot_absolute_error_total_mass, plot_total_mass, plot_solver_iterations, plot_absolute_error_system_energy, plot_component_update_steps

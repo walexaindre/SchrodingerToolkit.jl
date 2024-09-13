@@ -386,7 +386,7 @@ Get the number of iterations performed in the solver.
 ## Arguments
 - `stats::Stats`: The stats structure.
 """
-solver_iteations(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_iterations[1:length(stats)]
+solver_iterations(stats::Stats) where {Stats<:RuntimeStats} = stats.solver_iterations[1:length(stats)]
 
 """
     calculate_diff_step_and_solver_time(stats)
@@ -397,9 +397,9 @@ Calculate the absolute value of the difference between the time spent in the cur
 - `stats::Stats`: The stats structure.
 """
 function calculate_diff_step_and_solver_time(stats::Stats) where {Stats<:RuntimeStats}
-    step_time = step_time(stats)
-    solver_time = solver_time(stats)
-    return abs.(step_time .- solver_time)
+    steptime = step_time(stats)
+    solvertime = solver_time(stats)
+    return abs.(steptime .- solvertime)
 end
 
 """
