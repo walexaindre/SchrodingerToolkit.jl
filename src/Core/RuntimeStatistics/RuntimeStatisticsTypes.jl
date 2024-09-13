@@ -1,5 +1,5 @@
 """
-    AbstractRuntimeStats{IntType,FloatType,ArrayType}
+    AbstractRuntimeStats{IntType,FloatType,IntArrayType,FloatArrayType}
 
 This abstract type provides basic tracking for runtime analysis of PDE simulation.
 
@@ -10,24 +10,24 @@ This abstract type provides basic tracking for runtime analysis of PDE simulatio
 - `islog(Stats)`: Returns `true` if the `Stats` is logging problem related data.
 - `islocked(Stats)`: Returns `true` if the `Stats` is locked meaning that you can not modify it. This is used to prevent data corruption after deserialization.
 - `islog_solver_info(Stats)`: Returns `true` if the `Stats` is logging solver related data.
-- `islog_system_total_power(Stats)`: Returns `true` if the `Stats` is logging the total power of the system.
+- `islog_system_total_mass(Stats)`: Returns `true` if the `Stats` is logging the total mass of the system.
 - `islog_component_update_steps(Stats)`: Returns `true` if the `Stats` is logging the number of times that the components are updated.
 
 - `initialize_stats(::Type{FloatVectorType}, ::Type{IntVectorType},ncomponents,log_freq,time_steps,islog_solver_info::Bool)`: Initialize the memory underlying `Stats` type. 
-- `startup_stats!(Stats,start_power,start_energy)`: Initialize the power and energy at time step `0`. This is usally stored at the last index of the memory.
-- `update_power!(Stats,power,index)`: Update the power at time step `index`.
+- `startup_stats!(Stats,start_mass,start_energy)`: Initialize the mass and energy at time step `0`. This is usally stored at the last index of the memory.
+- `update_mass!(Stats,mass,index)`: Update the mass at time step `index`.
 - `update_energy!(Stats,energy,index)`: Update the energy at time step `index`.
 - `advance_iteration!(Stats)`: Move from sample  `n`  to  `n+1`.
 
 - `serialize(Stats,path)`: Serialize the `Stats` type to a file.
 - `deserialize(::Type{Stats},path)`: Deserialize the `Stats` type from a file. The type here is for dispatching purposes.
 
-- `system_power(Stats,component_idx,index)`: Get the power at `component_idx` in time step `index`.
-- `system_power(Stats,component_idx)`: Get the full internal power vector at `component_idx`.
+- `system_mass(Stats,component_idx,index)`: Get the mass at `component_idx` in time step `index`.
+- `system_mass(Stats,component_idx)`: Get the full internal mass vector at `component_idx`.
 - `system_energy(Stats,index)`: Get the energy at time step `index`.
 - `system_energy(Stats)`: Get the full internal energy vector.
-- `start_power(Stats)`: Get the power for all components at time step `0`.
-- `start_power(Stats,component_idx)`: Get the power at `component_idx` at time step `0`.
+- `start_mass(Stats)`: Get the mass for all components at time step `0`.
+- `start_mass(Stats,component_idx)`: Get the mass at `component_idx` at time step `0`.
 - `start_energy(Stats)`: Get the energy at time step `0`.
 - `get_solver_time(Stats,index)`: Get the solver time at time step `index`.
 - `get_solver_iterations(Stats,index)`: Get the solver iterations at time step `index`.
@@ -55,10 +55,10 @@ end
 
 mutable struct RuntimeStats{IntType,FloatType,IntVectorType,
                             FloatVectorType<:AbstractArray{FloatType},
-                            Power<:Tuple{Vararg{ComponentMass{FloatType,FloatVectorType}}}} <:
+                            Mass<:Tuple{Vararg{ComponentMass{FloatType,FloatVectorType}}}} <:
                AbstractRuntimeStats{IntType,FloatType,IntVectorType,FloatVectorType}
     const system_energy::FloatVectorType
-    const system_mass::Power
+    const system_mass::Mass
 
     const system_total_mass::FloatVectorType
 
@@ -70,7 +70,7 @@ mutable struct RuntimeStats{IntType,FloatType,IntVectorType,
     const component_update_steps::IntVectorType
     const log_frequency::IntType
     
-    # Index: 1 = log_solver_info, 2 = log_system_total_power, 3 = log_component_update_steps, 4 = locked, 5 = log_stats, 6 - 8 = unused
+    # Index: 1 = log_solver_info, 2 = log_system_total_mass, 3 = log_component_update_steps, 4 = locked, 5 = log_stats, 6 - 8 = unused
     const config::NTuple{8,Bool}
 
     log_data::Bool

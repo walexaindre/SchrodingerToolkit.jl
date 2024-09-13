@@ -1,10 +1,10 @@
 function ConfigRuntimeStatsOptions(log_frequency::IntType = 10;
                                    log_solver_info::Bool = true,
-                                   log_system_total_power::Bool = false,
+                                   log_system_total_mass::Bool = false,
                                    log_component_update_steps::Bool = false,
                                    locked::Bool = false,
                                    log_stats::Bool = true) where {IntType}
-    return (log_frequency, log_solver_info, log_system_total_power,
+    return (log_frequency, log_solver_info, log_system_total_mass,
             log_component_update_steps, locked, log_stats)
 end
 
@@ -48,7 +48,7 @@ Base.ndims(conf::SolverConfig) = length(conf.space_order)
 
 @inline stats_logfreq(conf::SolverConfig) = conf.stats[1]
 @inline stats_log_solver_info(conf::SolverConfig) = conf.stats[1 + 1]
-@inline stats_log_system_total_power(conf::SolverConfig) = conf.stats[2 + 1]
+@inline stats_log_system_total_mass(conf::SolverConfig) = conf.stats[2 + 1]
 @inline stats_log_component_update_steps(conf::SolverConfig) = conf.stats[3 + 1]
 @inline stats_locked(conf::SolverConfig) = conf.stats[4 + 1]
 @inline stats_log_stats(conf::SolverConfig) = conf.stats[5 + 1]

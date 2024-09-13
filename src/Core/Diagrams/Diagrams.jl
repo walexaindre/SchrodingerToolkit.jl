@@ -72,3 +72,23 @@ function diagram_label_conf(axis; xlabel = "x-label", ylabel = "y-label",
         setproperty!(axis, prop, value)
     end
 end
+
+function diagram_base_2d(xval, yval, avg; xlabel = "x - label", ylabel = "y - label", kwargs...)
+    linewidth = haskey(kwargs, :linewidth) ? kwargs[:linewidth] : 2.5
+    linestyle = haskey(kwargs, :linestyle) ? kwargs[:linestyle] : :dash
+    color = haskey(kwargs, :color) ? kwargs[:color] : RGBf(0.0039, 0.239216, 0.5333)
+    colormap = haskey(kwargs, :colormap) ? kwargs[:colormap] : :default
+
+    fig = diagram_startup()
+    axis = Axis(fig[1, 1])
+    diagram_axis_conf(axis)
+    diagram_label_conf(axis; xlabel = xlabel, ylabel = ylabel)
+    diagram_hide_conf(axis)
+
+    scatterlines!(axis, xval, yval; color = color, linewidth = linewidth,
+                  linestyle = linestyle, colormap = colormap, kwargs...)
+
+    ablines!(axis, avg, 0; linestyle = linestyle, linewidth = linewidth, kwargs...)
+
+    fig, axis
+end
