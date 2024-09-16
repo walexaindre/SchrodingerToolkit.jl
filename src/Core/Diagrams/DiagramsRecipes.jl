@@ -1,5 +1,16 @@
 #Unstable... Makie.jl isn't at release 1.0 yet.
 
+"""
+    plot_systemnd(Memory, Grid, idx; kwargs...)
+
+Plot the system at current time step.
+
+# Arguments
+- `Memory`: The memory struct.
+- `Grid`: The grid.
+- `idx`: The index of the component.
+- `kwargs...`: Additional keyword arguments passed to `Makie`.
+"""
 function plot_systemnd(Memory, Grid, idx; kwargs...)
     ndimsv = ndims(Grid)
     x = get_range(Grid, 1)
@@ -38,6 +49,16 @@ function plot_systemnd(Memory, Grid, idx; kwargs...)
     fig, axis
 end
 
+"""
+    plot_execution_time(Stats::RTStats, Grid; kwargs...)
+
+Plot the execution time at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `kwargs...`: Additional keyword arguments passed to `diagram_base_2d`.
+"""
 function plot_execution_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     log_freq = Stats.log_frequency
     τ = Grid.τ * log_freq
@@ -54,6 +75,16 @@ function plot_execution_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: 
                     kwargs...)
 end
 
+"""
+    plot_solver_time(Stats::RTStats, Grid; kwargs...)
+
+Plot the solver time at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `kwargs...`: Additional keyword arguments passed to `diagram_base_2d`.
+"""
 function plot_solver_time(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sol_time = solver_time(Stats) * 1000.0
     avg = mean(sol_time) * 1000.0
@@ -84,6 +115,17 @@ function plot_preprocessing_time(Stats::RTStats, Grid; kwargs...) where {RTStats
                     ylabel = "Preprocessing time (ms)", kwargs...)
 end
 
+"""
+    plot_absolute_error_mass_per_component(Stats::RTStats, Grid, index; kwargs...)
+
+Plot the absolute error in the mass at each component at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `index`: The index of the component.
+- `kwargs...`: Additional keyword arguments passed to `diagram_2d`.
+"""
 function plot_absolute_error_mass_per_component(Stats::RTStats, Grid, index; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = calculate_diff_system_mass(Stats, index)
     log_freq = Stats.log_frequency
@@ -97,6 +139,18 @@ function plot_absolute_error_mass_per_component(Stats::RTStats, Grid, index; kwa
                     ylabel = "Absolute Error",yscale=Makie.pseudolog10, kwargs...)
 end
 
+
+"""
+    plot_mass_per_component(Stats::RTStats, Grid, index; kwargs...)
+
+Plot the mass at each component at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `index`: The index of the component.
+- `kwargs...`: Additional keyword arguments passed to `diagram_2d`.
+"""
 function plot_mass_per_component(Stats::RTStats, Grid, index; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = system_mass(Stats, index)
     log_freq = Stats.log_frequency
@@ -110,6 +164,15 @@ function plot_mass_per_component(Stats::RTStats, Grid, index; kwargs...) where {
                     ylabel = "Mass at component $index", kwargs...)
 end
 
+"""
+    plot_absolute_error_total_mass(Stats::RTStats, Grid)
+
+Plot the absolute error in the total mass at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+"""
 function plot_absolute_error_total_mass(Stats::RTStats, Grid) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = calculate_diff_system_total_mass(Stats)
     log_freq = Stats.log_frequency
@@ -123,6 +186,15 @@ function plot_absolute_error_total_mass(Stats::RTStats, Grid) where {RTStats <: 
                     ylabel = "Absolute error",yscale = Makie.pseudolog10)
 end
 
+"""
+    plot_total_mass(Stats::RTStats, Grid)
+
+Plot the total mass at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+"""
 function plot_total_mass(Stats::RTStats, Grid) where {RTStats <: AbstractRuntimeStats}
     sys_mass_diff = system_total_mass(Stats)
     log_freq = Stats.log_frequency
@@ -136,6 +208,17 @@ function plot_total_mass(Stats::RTStats, Grid) where {RTStats <: AbstractRuntime
                     ylabel = "Total mass")
 end
 
+
+"""
+    plot_solver_iterations(Stats::RTStats, Grid; kwargs...)
+
+Plot the number of iterations taken by the solver at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `kwargs...`: Additional keyword arguments passed to `diagram_base_2d`.
+"""
 function plot_solver_iterations(Stats::RTStats , Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     iter = solver_iterations(Stats)
     avg = mean(iter)
@@ -151,6 +234,16 @@ function plot_solver_iterations(Stats::RTStats , Grid; kwargs...) where {RTStats
                     ylabel = "Solver iterations", kwargs...)
 end
 
+"""
+    plot_absolute_error_system_energy(Stats::RTStats, Grid; kwargs...)
+
+Plot the absolute error in the system energy at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `kwargs...`: Additional keyword arguments passed to `diagram_2d`.
+"""
 function plot_absolute_error_system_energy(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     sys_energy = calculate_diff_system_energy(Stats)
     log_freq = Stats.log_frequency
@@ -164,6 +257,16 @@ function plot_absolute_error_system_energy(Stats::RTStats, Grid; kwargs...) wher
     
 end
 
+"""
+    plot_component_update_steps(Stats::RTStats, Grid; kwargs...)
+
+Plot the number of steps taken by the component update function at each time step.
+
+# Arguments
+- `Stats::RTStats`: The runtime statistics.
+- `Grid`: The grid.
+- `kwargs...`: Additional keyword arguments passed to `diagram_base_2d`.
+"""
 function plot_component_update_steps(Stats::RTStats, Grid; kwargs...) where {RTStats <: AbstractRuntimeStats}
     steps = component_update_steps(Stats)
     avg = mean(steps)
