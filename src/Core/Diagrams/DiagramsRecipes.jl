@@ -30,7 +30,7 @@ function plot_systemnd(Memory, Grid, idx; kwargs...)
         z = reshape(points, size(Grid))
         surf_scene = surface!(axis, x, y, z; colormap = cgrad(colormap; rev = true),
                               kwargs...)
-        Colorbar(fig[1, 2], surf_scene; ticklabelsize = 36)
+        Colorbar(fig[1, 2], surf_scene; ticklabelsize = 42)
 
     else
         Error("3D plotting not supported yet.")

@@ -32,7 +32,7 @@ function diagram_hide_env(axis)
     hidedecorations!(axis)
 end
 
-function diagram_axis_conf(axis; labelsize = 42, ticklabelsize = 36)
+function diagram_axis_conf(axis; labelsize = 48, ticklabelsize = 42)
     is3d = hasproperty(axis, :zticks)
 
     ndims = is3d ? 3 : 2
