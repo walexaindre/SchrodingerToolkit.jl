@@ -15,6 +15,7 @@ makedocs(;
                                   assets = String[],),
          pages = ["Package Overview" => "index.md",
                   "Usage" => ["Backend selection" => "./Usage/backend.md",
+                              "Method selection" => "./Usage/methods.md",
                               "How to define a problem" => "./Usage/construction.md"],
                   "Examples" => ["Notes" => "./Examples/start.md"
                                  "Examples without Josephson junction and trapping potential" => ["2D" => "./Examples/NoTrappingPotentialNoJunction/2D.md"]

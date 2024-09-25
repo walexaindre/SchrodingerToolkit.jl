@@ -59,6 +59,16 @@ Base.ndims(conf::SolverConfig) = length(conf.space_order)
 @inline time_order(conf::SolverConfig) = conf.time_order
 @inline space_order(conf::SolverConfig) = conf.space_order
 
+@inline function is_explicit(conf::SolverConfig)
+    for ord in space_order(conf)
+        scheme = get_second_derivative_finite_difference_scheme(ord)
+        if is_implicit(scheme)
+            return false
+        end
+    end
+    return true
+end
+
 Base.show(io::IO, prob::SchrodingerProblem) = print(io,
                                                     "\nSchrodingerProblem:\n\
                                                     \n\tMethod: $(method(prob)|>typeof),\

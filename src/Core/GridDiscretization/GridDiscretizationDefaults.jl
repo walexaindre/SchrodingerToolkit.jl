@@ -77,6 +77,7 @@ end
 @inline get_second_derivative_finite_difference_scheme(sym::Symbol) = get(SpaceDiscretizationDefaults, sym,
                                                     nothing)
 
+
 @inline get_coefficients(::Type{SecondDerivativeFiniteDifferenceScheme}, sym::Symbol) = get_second_derivative_finite_difference_scheme(sym)
 
 export register, unregister, get_available, get_second_derivative_finite_difference_scheme, get_coefficients

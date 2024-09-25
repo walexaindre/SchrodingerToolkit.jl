@@ -59,6 +59,13 @@ end
     validate_positive_definite(SpaceDiscretization)
 end
 
+@inline function is_explicit(scheme::SecondDerivativeCoefficients{V,T}) where {T<:AbstractFloat,
+                                                                               V<:Integer}
+    scheme.α == scheme.β == zero(T)
+end
+@inline is_implicit(scheme::SecondDerivativeCoefficients{V,T}) where {T<:AbstractFloat,
+V<:Integer} = !is_explicit(scheme)
+
 @inline function check_validity(a::T, b::T, c::T, α::T, β::T,
                                 order::V) where {V<:Integer,
                                                  T<:AbstractFloatOrRational{V}}
