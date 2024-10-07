@@ -148,7 +148,7 @@ function psM2M2(PDE::SPDE, conf::SolverConfig,
 
     @backendtypes
 
-    
+
     Stats = initialize_stats(FloatCPUVector, IntCPUVector, PDE, conf, grid)
 
     AI, AJ, AV = get_A_format_COO(FloatType, PeriodicAbstractGrid(grid),
@@ -188,7 +188,7 @@ function psM2M2(PDE::SPDE, conf::SolverConfig,
         end
 
     elseif isgpu(backend)
-        @init_parallel_stencil()
+        #@init_parallel_stencil()
     end
 
     cstate = current_state!(Memory)
