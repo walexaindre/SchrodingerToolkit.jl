@@ -23,6 +23,7 @@ include("Solver/OutlineTypes.jl")
 
 #Core
 include("Core/VecOps/VecOps.jl")
+include("Core/Iterators/CyclicPairs.jl")
 include("Core/Offset/Offset.jl")
 include("Core/GridModel/GridModel.jl")
 include("Core/GridPDE/GridPDE.jl")

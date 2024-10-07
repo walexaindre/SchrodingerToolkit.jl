@@ -1,4 +1,5 @@
-function Base.show(io::IO,Component::SchrodingerPDEComponent{Tv,Γv,Fn,
+function Base.show(io::IO,
+                   Component::SchrodingerPDEComponent{Tv,Γv,Fn,
                                                       InitialCondition,
                                                       TrappingPotential}) where {Tv,
                                                                                  Γv,
@@ -13,7 +14,10 @@ function Base.show(io::IO,Component::SchrodingerPDEComponent{Tv,Γv,Fn,
     println("    Γ: $(Component.Γ |> typeof)")
 end
 
-function Base.show(io::IO,PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,MComp,Potential}
+function Base.show(io::IO,
+                   PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}) where {N,Tv,
+                                                                                  MComp,
+                                                                                  Potential}
     println("SchrodingerPDENonPolynomial{$N, $Tv}: ")
     println("    Boundaries: $(PDE.boundaries)")
     println("    Components: $(PDE.components)")
@@ -21,7 +25,12 @@ function Base.show(io::IO,PDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}
     println("Final time: $(PDE.T)")
 end
 
-function Base.show(io::IO,PDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,Tv,MComp,Potential,Optimized}
+function Base.show(io::IO,
+                   PDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}) where {N,
+                                                                                         Tv,
+                                                                                         MComp,
+                                                                                         Potential,
+                                                                                         Optimized}
     println("SchrodingerPDEPolynomial{$N, $Tv}: ")
     println("    Boundaries: $(PDE.boundaries)")
     println("    Components: $(PDE.components)")
@@ -94,6 +103,9 @@ end
 
 "Obtain the component of the Schrodinger PDE at index"
 @inline get_component(SPDE::SchrodingerPDENonPolynomial{N,Tv,MComp,Potential}, index::Int) where {N,Tv,MComp,Potential} = SPDE.components[index]
+
+"Obtain all the components of the Schrodinger PDE"
+@inline get_components(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = SPDE.components
 
 "Dispersion coefficient for the Schrodinger PDE component at index"
 @inline get_σ(SPDE::SchrodingerPDEPolynomial{N,Tv,MComp,Potential,Optimized}, index::Int) where {N,Tv,MComp,Potential,Optimized} = SPDE.components[index].σ
@@ -193,6 +205,46 @@ end
 
 "Number of components for the Schrodinger PDE"
 @inline ncomponents(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE} = length(SPDE.components)
+
+"Enumerate each different V for the Schrodinger PDE. Here equalities are tested by reference"
+@inline function enumerate_V(SPDE::PDEeq) where {PDEeq<:SchrodingerPDE}
+    dict_keys = collect(1:ncomponents(SPDE))
+    marked = zeros(Bool, ncomponents(SPDE))
+
+    dict_values = Vector{Int}(undef, ncomponents(SPDE))
+
+    for (idx, comp) in enumerate(SPDE.components)
+        if marked[idx]
+            continue
+        elseif !has_trapping_potential(comp)
+            dict_values[idx] = -1
+            marked[idx] = true
+        end
+
+        for (idx2, comp2) in zip((idx + 1):ncomponents(SPDE), SPDE.components)
+            if marked[idx2] || !has_trapping_potential(comp2)
+                continue
+            else
+                if comp.V == comp2.V
+                    dict_values[idx2] = idx
+                    marked[idx2] = true
+                end
+            end
+        end
+    end
+
+    all_marked = all(marked)
+    if !all_marked
+        throw(ArgumentError("Some trapping potentials are not enumerated"))
+    end
+
+    todelete = findall(x->x == -1, Iterators.reverse(dict_values)) 
+
+    deleteat!(dict_keys, todelete)
+    deleteat!(dict_values, todelete)
+
+    return Dict(dict_keys, dict_values)
+end
 
 """
     junction!(SPDE::PDEeq, memory, output)

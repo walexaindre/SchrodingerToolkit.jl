@@ -133,6 +133,81 @@ function M2(PDE::SPDE, conf::SolverConfig,
     Meth, Memory, Stats
 end
 
+function opLn(::Type{M2}, PDE, grid, opA, opD, σ, idx)
+    points = collect_points(grid)
+    Vᵢ = trapping_potential(PDE, idx)
+    opA * spdiagm(Vᵢ(points)) - σ * opD
+end
+
+function psM2M2(PDE::SPDE, conf::SolverConfig,
+                grid::Grid;
+                linear_solver_params = IterativeLinearSolver(backend_type(conf)),
+                stopping_criteria = NormBased(backend_type(conf))) where {Grid<:AbstractPDEGrid,
+                                                                          SPDE<:SchrodingerPDE}
+    start_time = time()
+
+    @backendtypes
+
+    
+    Stats = initialize_stats(FloatCPUVector, IntCPUVector, PDE, conf, grid)
+
+    AI, AJ, AV = get_A_format_COO(FloatType, PeriodicAbstractGrid(grid),
+                                  space_order(conf))
+
+    DI, DJ, DV = get_D_format_COO(FloatType, grid,
+                                  space_order(conf))
+
+    opA = sparse(AI, AJ, ComplexCPUVector(AV))
+
+    opD = sparse(DI, DJ, ComplexCPUVector(DV))
+
+    time_comp = get_time_composition(time_order(conf))
+
+    σset = Set(get_σ(PDE))
+    Vset = Set()
+
+    TimeMultipliers = grid.τ * coefficients(time_comp)
+
+    time_substeps = Tuple(grid.τ * collect(time_comp))
+
+    dictionary_keys = Vector{Tuple{FloatType,FloatType}}(undef, 0)
+
+    sizehint!(dictionary_keys, length(σset) * length(TimeMultipliers) * length(Vset))
+
+    if iscpu(backend)
+        for (σ, βτ, V) in product(σset, TimeMultipliers, Vset)
+            Ln = opLn(M2, PDE, grid, opA, opD, σ, idx)
+
+            opB = opA + im * (βτ / 4) * Ln
+
+            Ker = Kernel(opB, I, I)
+
+            push!(dictionary_keys, (σ, βτ, V))
+
+            push!(dictionary_values, Ker)
+        end
+
+    elseif isgpu(backend)
+        @init_parallel_stencil()
+    end
+
+    cstate = current_state!(Memory)
+    evaluate_ψ!(PDE, grid, cstate)
+
+    power_startup = system_mass(Memory, grid)
+    energy_startup = system_energy(Memory, PDE, grid)
+
+    startup_stats!(Stats, power_startup, energy_startup)
+
+    assembly_time = time() - start_time
+
+    Meth = M2(grid, KernelDict, linear_solver_params, time_substeps, stopping_criteria,
+              FloatType(assembly_time))
+
+    #Return must be Method, Memory, Stats
+    Meth, Memory, Stats
+end
+
 @inline function update_component!(method::M2, memory, stats, PDE, τ, σ, component_index)
     iτhalf = (τ / 4) * im
     Γ = junction_coefficient(PDE)

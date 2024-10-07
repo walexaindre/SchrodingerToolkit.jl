@@ -7,8 +7,8 @@ CUDA.device!(1)
 backend = GPUBackend{Int64,Float64}
 
 Params = SolverParameters(backend, 2, (:ord4, :ord4), :tord2_1_1)
-Grid = PeriodicGrid(backend,PDE,0.01,(0.016,0.016))
-Method, Memory, Stats = M4(PDE,Params,Grid)
+Grid = PeriodicGrid(backend,PDE,0.01,(2.0,2.0))
+Method, Memory, Stats = M1(PDE,Params,Grid)
 Problem = SchrodingerProblem(Method, Memory, Stats, PDE, Params)
 
 fig = Figure()

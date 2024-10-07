@@ -8,3 +8,6 @@ include("DirectionalDecomposition/M3.jl")
 
 #Explicit Timestepping
 include("ExplicitTimestepping/M5.jl")
+
+#Explict Timestepping with Explicit discretization
+include("ExplicitTimesteppingExplicitDiscretization/M6.jl")

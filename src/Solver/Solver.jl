@@ -1,3 +1,23 @@
+macro backendtypes()
+    return quote
+        global backend = backend_type(conf)
+        global FloatType = BackendReal(backend)
+        global ComplexType = Complex{FloatType}
+        global IntType = BackendInt(backend)
+
+        global FloatCPUVector = Vector{FloatType}
+        global IntCPUVector = Vector{IntType}
+
+        global FloatGPUVector = CuArray{FloatType}
+        global IntGPUVector = CuArray{IntType}
+        global ComplexCPUVector = Vector{Complex{FloatType}}
+        global ComplexCPUArray = Array{Complex{FloatType},2}
+
+        global ComplexGPUVector = CuVector{Complex{FloatType}}
+        global ComplexGPUArray = CuArray{Complex{FloatType},2}
+    end
+end
+
 function ConfigRuntimeStatsOptions(log_frequency::IntType = 10;
                                    log_solver_info::Bool = true,
                                    log_system_total_mass::Bool = false,
