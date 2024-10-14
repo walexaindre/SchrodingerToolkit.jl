@@ -50,6 +50,8 @@ lines!(Ax2D,x[1:length(y4)],y4,label="GMRES GPU",color = :purple, linestyle = :d
 Ax2D.yticks = WilkinsonTicks(6,k_min=5)
 Ax2D.xticks = WilkinsonTicks(6,k_min=5)
 axislegend(Ax2D, position = :lt)
+ylims!(Ax2D,0.1,25)
+xlims!(Ax2D,20,150)
 
 save("./exec_time3D.png", fig)
 fig

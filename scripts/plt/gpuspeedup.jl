@@ -20,7 +20,7 @@ lines!(Ax2D,x,speeduplu,label="LU",color = :blue, linestyle = :dash, linewidth =
 lines!(Ax2D,x,speedupgmres,label="GMRES",color = :red, linestyle = :dash, linewidth = 3.5)
 Ax2D.yticks = WilkinsonTicks(6,k_min=5)
 Ax2D.xticks = WilkinsonTicks(6,k_min=5)
-axislegend(Ax2D, position = :lt)
+axislegend(Ax2D, position = (0.02,0.99))
 
 save("./speedup.png", fig)
 fig

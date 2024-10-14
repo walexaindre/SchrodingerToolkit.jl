@@ -31,7 +31,7 @@ function M6(PDE::SPDE, conf::SolverConfig,
     backend = backend_type(conf)
 
     if isgpu(backend)
-        @init_parallel_stencil()
+        #@init_parallel_stencil()
     end
 
     FloatType = BackendReal(backend)

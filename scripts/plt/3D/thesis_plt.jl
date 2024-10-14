@@ -23,7 +23,7 @@ raw"""GPU
 
 fig = Figure(size = (800, 600), fontsize = 25,dpi=300)
 
-Ax2D = Axis(fig[1, 1],yscale=log,xlabel = "Points per dimension", ylabel = "Time (s)")
+Ax2D = Axis(fig[1, 1],yscale=log2,xlabel = "Points per dimension", ylabel = "Time (s)")
 x  = [0,30,40,50,80,130]
 
 # Step time 
@@ -37,9 +37,11 @@ lines!(Ax2D,x[1:length(y1)],y1,label="LU CPU",color = :blue, linestyle = :dash, 
 lines!(Ax2D,x[1:length(y2)],y2,label="GMRES CPU",color = :red, linestyle = :dash, linewidth = 3.5)
 lines!(Ax2D,x[1:length(y3)],y3,label="LU GPU",color = :green, linestyle = :dash, linewidth = 3.5)
 lines!(Ax2D,x[1:length(y4)],y4,label="GMRES GPU",color = :purple, linestyle = :dash, linewidth = 3.5)
-
-Ax2D.yticks = WilkinsonTicks(6,k_min=5)
-Ax2D.xticks = WilkinsonTicks(6,k_min=5)
-axislegend(Ax2D, position = :lc)
+ylims!(Ax2D,0.1,200)
+xlims!(Ax2D,20,150)
+Ax2D.yticks = WilkinsonTicks(5,k_min=4)
+Ax2D.xticks = WilkinsonTicks(5,k_min=4)
+axislegend(Ax2D, position = (0.99,0.99))
 
 save("./warmup_time3D.png", fig)
+fig

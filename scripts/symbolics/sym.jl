@@ -11,10 +11,3 @@ expanded_stencil = kron(I(4), stencil)
 repr2d_off = repr2d * stencil
 
 repr2d_off_front = expanded_stencil * repr2d
-
-macro av()
-    return quote
-        global rs = "rspack"
-        global rm = "rmpack"
-    end
-end
