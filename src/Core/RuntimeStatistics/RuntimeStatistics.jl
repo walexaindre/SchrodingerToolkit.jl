@@ -597,4 +597,4 @@ export initialize_stats, update_stats!, update_mass!, update_system_energy!,
        calculate_diff_system_mass, start_mass, start_energy, islocked,
        current_iteration, islog, update_component_update_steps!,
        update_system_total_mass!, component_update_calls, component_update_steps,
-       calculate_diff_system_total_mass, solver_time, step_time, solver_iteations
+       calculate_diff_system_total_mass, solver_time, step_time, solver_iterations

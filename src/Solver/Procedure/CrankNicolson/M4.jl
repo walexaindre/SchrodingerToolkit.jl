@@ -207,8 +207,8 @@ function step!(method::M4, memory, stats, PDE, conf::SolverConfig)
             steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
             update_component_update_steps!(stats, steps)
         end
-        #Backward
 
+        #Backward
         for (component_index, σ) in zip(length(σ_backward):-1:1, σ_backward)
             steps = update_component!(method, memory, stats, PDE, τ, σ, component_index)
             update_component_update_steps!(stats, steps)
@@ -219,6 +219,7 @@ function step!(method::M4, memory, stats, PDE, conf::SolverConfig)
 
     update_stats!(stats, memory, grid, PDE,
                   work_timer)
+    
     work_timer
 end
 
