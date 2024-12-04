@@ -45,7 +45,11 @@ function ψ₂(x)
     @. @views cos(x[:,1]-x[:,2]-x[:,3])
 end
 
+function N(prev,next,idx)
+    
+end
+
 C1 = SchrodingerPDEComponent(β, f₁, ψ₁, V₁, Γ)
 C2 = SchrodingerPDEComponent(β, f₂, ψ₂, V₂, Γ)
 
-PDE = SchrodingerPDEPolynomial((Ω, Ω, Ω), (C1, C2), F, T)
+PDE = SchrodingerPDEPolynomial((Ω, Ω, Ω), (C1, C2), F,N , T)

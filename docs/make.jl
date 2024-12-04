@@ -24,7 +24,7 @@ makedocs(;
                                          "How to plot" => "./Plot/howto.md"],
                   "Extending the package" => ["Prelude" => "./Extensions/prelude.md",
                                               "Adding a new finite difference scheme" => "./Extensions/fdschemes.md"],
-                  "Benchmark" => ["How to make your own benchmark" => "./Benchmark/howto.md",
+                  "Benchmarks" => ["How to make your own benchmark" => "./Benchmark/howto.md",
                                   "Benchmark Results" => "./Benchmark/results.md"],
                   "API" => ["Index" => "./API/index.md",
                             "Types" => "./API/API.md"],
