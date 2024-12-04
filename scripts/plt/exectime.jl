@@ -54,10 +54,10 @@ println("GMRES: ",speedup)
 speedup = y1./y3
 println("LU: ",speedup)
 
-lines!(Ax2D,x,y1,label="LU CPU",color = :blue, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y2,label="GMRES CPU",color = :red, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y3,label="LU GPU",color = :green, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y4,label="GMRES GPU",color = :purple, linestyle = :dash, linewidth = 3.5)
+lines!(Ax2D,x,y1,label="LU CPU", linestyle = :dash, linewidth = 3.5)
+lines!(Ax2D,x,y2,label="GMRES CPU", linestyle = :dot, linewidth = 3.5)
+lines!(Ax2D,x,y3,label="LU GPU", linestyle = :dashdot, linewidth = 3.5)
+lines!(Ax2D,x,y4,label="GMRES GPU", linestyle = :solid, linewidth = 3.5)
 
 Ax2D.yticks = WilkinsonTicks(6,k_min=5)
 Ax2D.xticks = WilkinsonTicks(6,k_min=5)

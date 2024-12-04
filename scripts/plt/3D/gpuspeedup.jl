@@ -15,8 +15,8 @@ println("GMRES: ",speedup)
 speeduplu = y1./y3
 println("LU: ",speedup)
 
-lines!(Ax2D,x[1:length(speeduplu)],speeduplu,label="LU",color = :blue, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x[1:length(speedupgmres)],speedupgmres,label="GMRES",color = :red, linestyle = :dash, linewidth = 3.5)
+lines!(Ax2D,x[1:length(speeduplu)],speeduplu,label="LU", linestyle = :solid, linewidth = 3.5)
+lines!(Ax2D,x[1:length(speedupgmres)],speedupgmres,label="GMRES", linestyle = :dash, linewidth = 3.5)
 Ax2D.yticks = WilkinsonTicks(6,k_min=5)
 Ax2D.xticks = WilkinsonTicks(6,k_min=5)
 axislegend(Ax2D, position = :lt)

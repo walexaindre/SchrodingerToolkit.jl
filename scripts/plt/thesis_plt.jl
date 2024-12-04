@@ -48,10 +48,10 @@ y3 = [0,0.44,1.86,4.33,7.69,12.33,18.72] #LU GPU
 y4 = [0,0.12,0.29,0.59,0.97,1.52,1.87] #GMRES GPU
 
 
-lines!(Ax2D,x,y1,label="LU CPU",color = :blue, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y2,label="GMRES CPU",color = :red, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y3,label="LU GPU",color = :green, linestyle = :dash, linewidth = 3.5)
-lines!(Ax2D,x,y4,label="GMRES GPU",color = :purple, linestyle = :dash, linewidth = 3.5)
+lines!(Ax2D,x,y1,label="LU CPU", linestyle = :dashdot, linewidth = 3.5)
+lines!(Ax2D,x,y2,label="GMRES CPU", linestyle = :dash, linewidth = 3.5)
+lines!(Ax2D,x,y3,label="LU GPU", linestyle = :solid, linewidth = 3.5)
+lines!(Ax2D,x,y4,label="GMRES GPU", linestyle = :solid, linewidth = 3.5)
 
 Ax2D.yticks = WilkinsonTicks(6,k_min=5)
 Ax2D.xticks = WilkinsonTicks(6,k_min=5)
