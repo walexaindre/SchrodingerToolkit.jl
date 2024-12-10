@@ -43,7 +43,7 @@ for i in 1:30
 
 end
 
-GLMakie.record(fig,"3D.gif",1:400;framerate=10) do t
+GLMakie.record(f,"3D.gif",1:400;framerate=20) do t
     obs[] = reshape(abs2.(current_state!(Memory)[:,1]|>Array),(100,100,100))
     step!(Problem)
 end
@@ -53,3 +53,5 @@ f = Figure()
 ax = Axis3(f[1,1])
 
 f
+
+save("./3dplt.png", f)
